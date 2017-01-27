@@ -1,0 +1,15 @@
+*.py[cod]
+
+# Vim
+*~
+*.swp
+*.swo
+
+*.egg-info
+dist
+build
+.env
+.codeintel
+.coverage
+.idea
+.DS_Store
