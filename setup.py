@@ -25,21 +25,22 @@ setup(
         tug = bay.cli:cli
 
         [bay.plugins]
-        container = bay.plugins.container:ContainerPlugin
-        hosts = bay.plugins.hosts:HostsPlugin
-        build = bay.plugins.build:BuildPlugin
-        run = bay.plugins.run:RunPlugin
-        ps = bay.plugins.ps:PsPlugin
-        tail = bay.plugins.tail:TailPlugin
-        legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
-        build_scripts = bay.plugins.build_scripts:BuildScriptsPlugin
-        mounts = bay.plugins.mounts:DevModesPlugin
-        boot = bay.plugins.boot:BootPlugin
-        ssh_agent = bay.plugins.ssh_agent:SSHAgentPlugin
-        waits = bay.plugins.waits:WaitsPlugin
         attach = bay.plugins.attach:AttachPlugin
-        profile = bay.plugins.profile:ProfilesPlugin
+        boot = bay.plugins.boot:BootPlugin
+        build = bay.plugins.build:BuildPlugin
+        build_scripts = bay.plugins.build_scripts:BuildScriptsPlugin
         build_volumes = bay.plugins.build_volumes:BuildVolumesPlugin
+        container = bay.plugins.container:ContainerPlugin
         gc = bay.plugins.gc:GcPlugin
+        hosts = bay.plugins.hosts:HostsPlugin
+        legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
+        mounts = bay.plugins.mounts:DevModesPlugin
+        profile = bay.plugins.profile:ProfilesPlugin
+        ps = bay.plugins.ps:PsPlugin
+        run = bay.plugins.run:RunPlugin
+        ssh_agent = bay.plugins.ssh_agent:SSHAgentPlugin
+        tail = bay.plugins.tail:TailPlugin
+        volume = bay.plugins.volume:VolumePlugin
+        waits = bay.plugins.waits:WaitsPlugin
     ''',
 )

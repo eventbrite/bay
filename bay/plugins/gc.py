@@ -16,6 +16,8 @@ class GcPlugin(BasePlugin):
     Does garbage collection either on demand or every so often after a build finishes.
     """
 
+    provides = ["gc"]
+
     def load(self):
         self.add_command(gc)
         self.add_hook("post-build", self.post_build)
