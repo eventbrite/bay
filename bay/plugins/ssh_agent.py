@@ -7,6 +7,7 @@ import subprocess
 from .base import BasePlugin
 from ..docker.introspect import FormationIntrospector
 from ..exceptions import DockerRuntimeError
+from ..constants import PluginHook
 
 
 class SSHAgentPlugin(BasePlugin):
@@ -22,8 +23,8 @@ class SSHAgentPlugin(BasePlugin):
     requires = ["boot-containers"]
 
     def load(self):
-        self.add_hook("pre-build", self.pre_build)
-        self.add_hook("pre-start", self.pre_start)
+        self.add_hook(PluginHook.PRE_BUILD, self.pre_build)
+        self.add_hook(PluginHook.PRE_START, self.pre_start)
 
     def pre_build(self, host, container, task):
         """

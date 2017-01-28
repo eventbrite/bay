@@ -9,6 +9,7 @@ from .alias_group import SpellcheckableAliasableGroup
 from .colors import PURPLE
 from .tasks import RootTask
 from ..config import Config
+from ..constants import PluginHook
 from ..docker.hosts import HostManager
 from ..containers.graph import ContainerGraph
 from ..containers.profile import NullProfile, Profile
@@ -25,8 +26,6 @@ class App(object):
     """
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
-
-    VALID_HOOKS = ["pre-start", "pre-build", "post-build"]
 
     def load_config(self, config_paths):
         self.config = Config(config_paths)
@@ -102,7 +101,7 @@ class App(object):
         """
         Adds a plugin hook to be run later.
         """
-        if hook_type not in self.VALID_HOOKS:
+        if hook_type not in PluginHook.valid_hooks:
             raise ValueError("Invalid hook type {}".format(hook_type))
         self.hooks.setdefault(hook_type, []).append(receiver)
 
