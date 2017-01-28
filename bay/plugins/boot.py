@@ -4,6 +4,7 @@ import click
 from .base import BasePlugin
 from ..cli.colors import RED
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..docker.introspect import FormationIntrospector
 from ..docker.runner import FormationRunner
 from ..exceptions import BadConfigError
@@ -30,8 +31,8 @@ class BootPlugin(BasePlugin):
     provides = ["boot-containers"]
 
     def load(self):
-        self.add_hook("pre-build", self.pre_build)
-        self.add_hook("pre-start", self.pre_start)
+        self.add_hook(PluginHook.PRE_BUILD, self.pre_build)
+        self.add_hook(PluginHook.PRE_START, self.pre_start)
 
     def pre_build(self, host, container, task):
         boot_containers = self.calculate_boot_containers("build", container)

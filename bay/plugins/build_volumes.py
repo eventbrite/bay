@@ -3,6 +3,7 @@ from docker.errors import NotFound
 
 from .base import BasePlugin
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..docker.build import Builder
 
 
@@ -15,8 +16,8 @@ class BuildVolumesPlugin(BasePlugin):
     requires = ["build"]
 
     def load(self):
-        self.add_hook("pre-start", self.pre_start)
-        self.add_hook("post-build", self.post_build)
+        self.add_hook(PluginHook.PRE_START, self.pre_start)
+        self.add_hook(PluginHook.POST_BUILD, self.post_build)
 
     def pre_start(self, host, instance, task):
         """

@@ -4,14 +4,15 @@ import subprocess
 
 from .base import BasePlugin
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..exceptions import BuildFailureError
 
 
 class BuildScriptsPlugin(BasePlugin):
 
     def load(self):
-        self.add_hook("pre-build", self.run_pre_build_script)
-        self.add_hook("post-build", self.run_post_build_script)
+        self.add_hook(PluginHook.PRE_BUILD, self.run_pre_build_script)
+        self.add_hook(PluginHook.POST_BUILD, self.run_post_build_script)
 
     def run_pre_build_script(self, host, container, task):
         """

@@ -1,4 +1,5 @@
 from .base import BasePlugin
+from ..constants import PluginHook
 
 
 class LegacyEnvPlugin(BasePlugin):
@@ -7,7 +8,7 @@ class LegacyEnvPlugin(BasePlugin):
     """
 
     def load(self):
-        self.add_hook("pre-start", self.add_link_envs)
+        self.add_hook(PluginHook.PRE_START, self.add_link_envs)
 
     def add_link_envs(self, host, instance, task):
         """

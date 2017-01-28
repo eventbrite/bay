@@ -6,6 +6,7 @@ from docker.errors import NotFound
 from .base import BasePlugin
 from ..cli.argument_types import HostType
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError
 from ..utils.sorting import dependency_sort
 
@@ -18,7 +19,7 @@ class GcPlugin(BasePlugin):
 
     def load(self):
         self.add_command(gc)
-        self.add_hook("post-build", self.post_build)
+        self.add_hook(PluginHook.POST_BUILD, self.post_build)
 
     def post_build(self, host, container, task):
         """
