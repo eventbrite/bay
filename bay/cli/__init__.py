@@ -1,4 +1,5 @@
 import click
+import collections
 import pkg_resources
 import sys
 import os
@@ -68,7 +69,7 @@ class App(object):
                 if r not in provided:
                     click.echo(PURPLE("Plugin {} requires {}, but nothing provides it.".format(plugin, r)))
                     sys.exit(1)
-        # Sort plugins by dependency order
+        # Sort plugins by dependency order, and then alphabetically inside that
         plugins = dependency_sort(plugins, lambda x: [provided[r] for r in x.requires])
         # Load plugins
         for plugin in plugins:
@@ -122,7 +123,7 @@ class App(object):
         """
         if name in self.catalog:
             raise ValueError("Catalog type {} already registered".format(name))
-        self.catalog[name] = {}
+        self.catalog[name] = collections.OrderedDict()
 
     def add_catalog_item(self, type_name, name, value):
         """

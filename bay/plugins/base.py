@@ -6,20 +6,28 @@ class PluginMetaclass(type):
     Custom plugin metaclass to allow comparison for sorting by memory ID
     """
 
+    @property
+    def _orderable_id(self):
+        """
+        Property that is unique but orderable enough that plugins load
+        in the same order each call unless they're named exactly the same.
+        """
+        return self.__name__ + str(id(self))
+
     def __gt__(self, other):
-        return id(self) > id(other)
+        return self._orderable_id > other._orderable_id
 
     def __lt__(self, other):
-        return id(self) < id(other)
+        return self._orderable_id < other._orderable_id
 
     def __eq__(self, other):
-        return id(self) == id(other)
+        return self._orderable_id == other._orderable_id
 
     def __ne__(self, other):
-        return id(self) != id(other)
+        return self._orderable_id != other._orderable_id
 
     def __hash__(self):
-        return hash(id(self))
+        return hash(self._orderable_id)
 
 
 @attr.s
