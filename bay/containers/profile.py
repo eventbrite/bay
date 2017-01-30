@@ -15,21 +15,26 @@ class Profile:
     to a ContainerGraph. Multiple profiles might be used one after the other.
     """
     file_path = attr.ib(default=None)
+    load_immediately = attr.ib(default=True)
     parent_profile = attr.ib(default=None, init=False)
     description = attr.ib(default=None, init=False)
     version = attr.ib(default=None, init=False)
+    containers = attr.ib(default=attr.Factory(dict), init=False)
 
     def __attrs_post_init__(self):
-        self.load()
+        if self.load_immediately:
+            self.load()
 
     def load(self):
         """
         Loads the profile data from a YAML file
         """
-        self.containers = {}
         # Read in file
         with open(self.file_path, "r") as fh:
             data = yaml.safe_load(fh.read())
+        if data is None:
+            return
+
         # Parse container details
         try:
             self.parent_profile = data.get("name")

@@ -43,7 +43,7 @@ def profile(app, name, up, host):
         user_profile = Profile(user_profile_path)
         parent_profile_name = user_profile.parent_profile
     else:
-        user_profile = Profile(user_profile_path)
+        user_profile = Profile(user_profile_path, load_immediately=False)
         parent_profile_name = None
 
     if name is None:
