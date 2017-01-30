@@ -88,7 +88,10 @@ class ContainerGraph:
         self._dependencies[depender] = set()
         for provider in providers:
             if provider not in self.containers.values() or depender not in self.containers.values():
-                raise ValueError("Cannot link between containers %s and %s - one or both not in graph." % (provider, depender))
+                raise ValueError("Cannot link between containers %s and %s - one or both not in graph." % (
+                    provider,
+                    depender,
+                ))
             self._dependencies[depender].add(provider)
 
     def set_option(self, container, option, value):
@@ -110,7 +113,10 @@ class ContainerGraph:
         Adds a build dependency edge to the graph where `depender` depends on `provider`
         """
         if provider not in self.containers.values() or depender not in self.containers.values():
-            raise ValueError("Cannot build-link between containers %s and %s - one or both not in graph." % (provider, depender))
+            raise ValueError("Cannot build-link between containers %s and %s - one or both not in graph." % (
+                provider,
+                depender,
+            ))
         self._build_dependencies[depender] = provider
 
     def dependencies(self, container):

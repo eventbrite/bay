@@ -104,7 +104,11 @@ class FormationRunner:
             # See if we can stop anything new - everything that depends on it must also be stopped
             for instance in list(to_stop):
                 if all((linker not in to_stop and linker not in stopping) for linker in incoming_links[instance]):
-                    stop_threads[instance] = ExceptionalThread(target=self.stop_container, args=(instance,), daemon=True)
+                    stop_threads[instance] = ExceptionalThread(
+                        target=self.stop_container,
+                        args=(instance,),
+                        daemon=True,
+                    )
                     stop_threads[instance].start()
                     to_stop.remove(instance)
                     stopping.add(instance)
@@ -148,7 +152,11 @@ class FormationRunner:
             # See if we can start anything new - everything that it depends on must be started
             for instance in list(to_start):
                 if all((dependency in started) for dependency in instance.links.values()):
-                    start_threads[instance] = ExceptionalThread(target=self.start_container, args=(instance,), daemon=True)
+                    start_threads[instance] = ExceptionalThread(
+                        target=self.start_container,
+                        args=(instance,),
+                        daemon=True,
+                    )
                     start_threads[instance].start()
                     to_start.remove(instance)
                     starting.add(instance)
