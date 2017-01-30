@@ -1,7 +1,7 @@
 import threading
 import shutil
 
-from .colors import CYAN, GREEN, RED
+from .colors import CYAN, GREEN, RED, YELLOW
 
 
 UP_ONE = "\033[A\033[1000D"
@@ -21,6 +21,7 @@ class Task:
     FLAVOR_NEUTRAL = "neutral"
     FLAVOR_GOOD = "good"
     FLAVOR_BAD = "bad"
+    FLAVOR_WARNING = "warning"
 
     def __init__(self, name, parent=None):
         self.name = name
@@ -133,6 +134,8 @@ class Task:
             status_string = RED(status_string)
         elif self.status_flavor == self.FLAVOR_GOOD:
             status_string = GREEN(status_string)
+        elif self.status_flavor == self.FLAVOR_WARNING:
+            status_string = YELLOW(status_string)
         # Print out our line
         indent_string = indent * INDENT_CHARS
         print("{}{}: {}{}".format(

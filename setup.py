@@ -31,6 +31,7 @@ setup(
         build_scripts = bay.plugins.build_scripts:BuildScriptsPlugin
         build_volumes = bay.plugins.build_volumes:BuildVolumesPlugin
         container = bay.plugins.container:ContainerPlugin
+        doctor = bay.plugins.doctor:DoctorPlugin
         gc = bay.plugins.gc:GcPlugin
         hosts = bay.plugins.hosts:HostsPlugin
         legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
