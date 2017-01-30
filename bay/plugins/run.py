@@ -1,5 +1,6 @@
 import attr
 import click
+import sys
 
 from .base import BasePlugin
 from ..cli.argument_types import ContainerType, HostType
@@ -35,7 +36,11 @@ def run(app, containers, host):
     # Make a Formation that represents what we want to do by taking the existing
     # state and adding in the containers we want
     for container in containers:
-        formation.add_container(container)
+        try:
+            formation.add_container(container, host)
+        except ImageNotFoundException as e:
+            click.echo(RED(str(e)))
+            sys.exit(1)
     # Run that change
     task = Task("Starting containers", parent=app.root_task)
     run_formation(app, host, formation, task)
@@ -52,7 +57,11 @@ def shell(app, container, host):
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
     # Make a Formation with that container launched with bash in foreground
-    instance = formation.add_container(container)
+    try:
+        instance = formation.add_container(container, host)
+    except ImageNotFoundException as e:
+        click.echo(RED(str(e)))
+        sys.exit(1)
     instance.foreground = True
     instance.command = ["/bin/bash"]
     # Run that change

@@ -8,7 +8,6 @@ from docker.errors import NotFound
 
 from .introspect import FormationIntrospector
 from .towline import Towline
-from .images import ImageRepository
 from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError, DockerInteractiveException, ImageNotFoundException, NotFoundException
@@ -30,25 +29,10 @@ class FormationRunner:
         self.app = app
         self.host = host
         self.formation = formation
-        self.images = ImageRepository(self.host)
         self.introspector = FormationIntrospector(self.host, self.formation.graph)
         self.task = task
         # Allows things to override and not have anything stop
         self.stop = stop
-
-    def missing_images(self):
-        """
-        Verifies that all the images needed to run the formation are present
-        on the host. Returns [] if things are good, or the Instances missing
-        images if they're not.
-        """
-        missing = []
-        for instance in self.formation:
-            try:
-                self.images.image_version(instance.image, instance.image_tag)
-            except ImageNotFoundException:
-                missing.append(instance)
-        return missing
 
     def run(self):
         """
@@ -255,16 +239,9 @@ class FormationRunner:
                 else:
                     raise NotFoundException("The source path does not exist")
 
-        # Get image, or add container to the not found exception for use further up
-        try:
-            image_hash = self.images.image_version(instance.image, instance.image_tag)
-        except ImageNotFoundException as e:
-            e.container = instance.container
-            raise e
-
         # Create container
         container_pointer = self.host.client.create_container(
-            image_hash,
+            instance.image_id,
             command=instance.command,
             detach=not instance.foreground,
             stdin_open=instance.foreground,

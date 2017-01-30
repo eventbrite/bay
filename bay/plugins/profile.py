@@ -94,7 +94,7 @@ def up(app, host):
     formation = ContainerFormation(app.containers)
     for container in app.containers:
         if app.containers.options(container).get('default_boot'):
-            formation.add_container(container)
+            formation.add_container(container, host)
 
     task = Task("Restarting containers", parent=app.root_task)
     run_formation(app, host, formation, task)

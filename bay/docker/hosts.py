@@ -1,9 +1,10 @@
-import docker
-import urllib.parse
-import os
-
 import attr
+import docker
+import os
+import urllib.parse
+
 from ..utils.functional import cached_property, thread_cached_property
+from .images import ImageRepository
 
 
 @attr.s
@@ -118,6 +119,13 @@ class Host(object):
             timeout=10,
             tls=tls,
         )
+
+    @thread_cached_property
+    def images(self):
+        """
+        Returns an image repository for the host
+        """
+        return ImageRepository(self)
 
     def container_exists(self, name):
         """
