@@ -43,19 +43,21 @@ class FormationIntrospector:
             raise DockerRuntimeError(
                 "Cannot find local container for running container {}".format(container_details['Names'])
             )
-        # Split the image name into a name and tag
-        if ":" in container_details['Image']:
-            image, image_tag = container_details['Image'].split(":", 1)
+        # Get the image hash
+        image = container_details['Image']
+        assert ":" in image
+        if image.startswith("sha256:"):
+            image_id = image
         else:
-            image = container_details['Image']
-            image_tag = "latest"
+            # It's a string name of a image
+            # CONVERT IMAGE NAME INTO HASH USING REPO
+            name, tag = image.split(":", 1)
+            image_id = self.host.images.image_version(name, tag)
         # Make a formation instance
         instance = ContainerInstance(
             name=container_details['Names'][0].lstrip("/"),
             container=container,
-            image=image,
-            image_tag=image_tag,
-            links=None,
+            image_id=image_id,
         )
         # Set extra attributes because it's running
         instance.ip_address = container_details['NetworkSettings']['Networks']['eventbrite']['IPAddress']

@@ -49,14 +49,14 @@ class ContainerFormation:
         del self.container_instances[instance.name]
         instance.formation = None
 
-    def add_container(self, container):
+    def add_container(self, container, host):
         """
         Adds a container to run inside the formation along with all dependencies.
         Returns the Instance that was created for the container.
         """
         # Get the list of all dependencies and dependency-ancestors in topological order
         # (this also makes sure there are no cycles as a nice side effect)
-        devmodes = self.graph.options(container).get('devmodes')
+        devmodes = self.graph.options(container).get('devmodes', set())
         dependency_ancestry = dependency_sort([container], self.graph.dependencies)[:-1]
         direct_dependencies = self.graph.dependencies(container)
         # Make sure all its dependencies are in the formation
@@ -68,15 +68,16 @@ class ContainerFormation:
                     break
             else:
                 # OK, we need to make one
-                instance = self.add_container(dependency)
+                instance = self.add_container(dependency, host)
             if dependency in direct_dependencies:
                 links[dependency.name] = instance
+        # Look up the image hash to use in the repo
+        image_id = host.images.image_version(container.image_name, "latest")
         # Make the instance
         instance = ContainerInstance(
             name="{}.{}.1".format(self.graph.prefix, container.name),
             container=container,
-            image=container.image_name,
-            image_tag="latest",
+            image_id=image_id,
             links=links,
             devmodes=devmodes,
         )
@@ -103,7 +104,7 @@ class ContainerFormation:
         return iter(self.container_instances.values())
 
 
-@attr.s
+@attr.s(cmp=False, hash=False)
 class ContainerInstance:
     """
     Represents a single container as part of an overall ContainerFormation
@@ -111,7 +112,7 @@ class ContainerInstance:
 
     :name: The runtime name of the container, like "eventbrite.core-frontend.1"
     :container: The Container instance that's backing this container
-    :image: The image name/hash to use for the container
+    :image_id: The image hash to use for the container
     :links: A dictionary of {alias_str: ContainerInstance} that maps other containers to links
     :devmodes: A set of enabled devmode strings as defined on the Container
     :ports: Exposed ports as {external_port: container_port}
@@ -122,8 +123,7 @@ class ContainerInstance:
 
     name = attr.ib()
     container = attr.ib()
-    image = attr.ib()
-    image_tag = attr.ib()
+    image_id = attr.ib()
     links = attr.ib(default=attr.Factory(dict))
     devmodes = attr.ib(default=attr.Factory(set))
     ports = attr.ib(default=attr.Factory(dict))
@@ -156,7 +156,7 @@ class ContainerInstance:
         return self.__class__(
             name=self.name,
             container=self.container,
-            image=self.image,
+            image_id=self.image_id,
             links=self.links,
             devmodes=self.devmodes,
             ports=self.ports,
@@ -173,7 +173,7 @@ class ContainerInstance:
         return (
             self.name != other.name or
             self.container != other.container or
-            self.image != other.image or
+            self.image_id != other.image_id or
             self.links != other.links or
             self.devmodes != other.devmodes or
             self.ports != other.ports or

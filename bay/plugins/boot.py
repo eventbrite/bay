@@ -7,7 +7,7 @@ from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..docker.introspect import FormationIntrospector
 from ..docker.runner import FormationRunner
-from ..exceptions import BadConfigError
+from ..exceptions import BadConfigError, ImageNotFoundException
 
 
 class BootPlugin(BasePlugin):
@@ -88,9 +88,9 @@ class BootPlugin(BasePlugin):
             if any(instance.container == container for instance in formation):
                 continue
             # See if it can be started (use a runner just for missing images - maybe improve this)
-            formation.add_container(container)
-            runner = FormationRunner(self.app, host, formation, None)
-            if runner.missing_images():
+            try:
+                formation.add_container(container, host)
+            except ImageNotFoundException:
                 if required:
                     click.echo(RED("Cannot launch required boot container {} - no image".format(container.name)))
                     sys.exit(1)
@@ -100,7 +100,7 @@ class BootPlugin(BasePlugin):
             boot_task = Task("Running boot containers", parent=task)
             formation = FormationIntrospector(host, self.app.containers).introspect()
             for container in to_boot:
-                formation.add_container(container)
+                formation.add_container(container, host)
             runner = FormationRunner(self.app, host, formation, boot_task, stop=False)
             runner.run()
             boot_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)

@@ -94,7 +94,7 @@ def mount(app, mount, container, host):
         # restart all the running containers
         formation = FormationIntrospector(host, app.containers).introspect()
         for con in containers:
-            formation.add_container(con)
+            formation.add_container(con, host)
 
         task = Task("Restarting containers", parent=app.root_task)
         run_formation(app, host, formation, task)
@@ -140,7 +140,7 @@ def unmount(app, mount, container, host):
         # restart all the running containers
         formation = FormationIntrospector(host, app.containers).introspect()
         for con in containers:
-            formation.add_container(con)
+            formation.add_container(con, host)
 
         task = Task("Restarting containers", parent=app.root_task)
         run_formation(app, host, formation, task)
