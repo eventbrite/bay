@@ -20,6 +20,7 @@ class DoctorPlugin(BasePlugin):
         self.add_catalog_type("doctor-exam")
 
 
+@attr.s
 class BaseExamination:
     """
     Base class for doctor examinations.
@@ -31,6 +32,7 @@ class BaseExamination:
     If it returns without raising, it is considered successful.
     """
 
+    app = attr.ib()
     description = None
 
     class Failure(BaseException):
@@ -94,7 +96,7 @@ def doctor(app, host):
     exams = app.get_catalog_items("doctor-exam").values()
     problem = False
     for exam in exams:
-        if not exam().run(host, app.root_task):
+        if not exam(app).run(host, app.root_task):
             problem = True
     if problem:
         sys.exit(1)
