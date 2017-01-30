@@ -23,6 +23,10 @@ class App(object):
 
     Contains a "hooks" system, which allows plugins to register hooks (callables
     that take keyword arguments and return nothing) and other code to call them.
+
+    Also contains a "catalog" system, which allows registration of "catalog types"
+    and "catalog items", which is similar to the Python entrypoint system but tied
+    to Bay plugins instead so we can have conditional loading/ordered loading.
     """
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
@@ -38,7 +42,7 @@ class App(object):
         Loads all plugins defined in config
         """
         self.hooks = {}
-        self.waits = {}
+        self.catalog = {}
         # Load plugin classes based on entrypoints
         plugins = []
         for entrypoint in pkg_resources.iter_entry_points("bay.plugins"):
@@ -112,13 +116,28 @@ class App(object):
         for hook in self.hooks.get(hook_type, []):
             hook(**kwargs)
 
-    def add_wait(self, name, check):
+    def add_catalog_type(self, name):
         """
-        Adds a wait by name
+        Adds a type of "catalog" for things to register.
         """
-        if name in self.waits:
-            raise ValueError("Wait '{}' already registered".format(name))
-        self.waits[name] = check
+        if name in self.catalog:
+            raise ValueError("Catalog type {} already registered".format(name))
+        self.catalog[name] = {}
+
+    def add_catalog_item(self, type_name, name, value):
+        """
+        Adds a catalog item by name and type
+        """
+        if type_name not in self.catalog:
+            raise ValueError("Catalog type {} does not exist".format(type_name))
+        if name in self.catalog[type_name]:
+            raise ValueError("Catalog item {}/{} already registered".format(type_name, name))
+        self.catalog[type_name][name] = value
+
+    def get_catalog_items(self, type_name):
+        if type_name not in self.catalog:
+            raise ValueError("Catalog type {} does not exist".format(type_name))
+        return self.catalog[type_name]
 
     def get_plugin(self, klass):
         """
