@@ -8,6 +8,7 @@ from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError
 
+
 class WaitsPlugin(BasePlugin):
     """
     Contains the basic, standard waits. Waits' .check is called repeatedly and should return True if the condition is
@@ -57,6 +58,7 @@ class WaitsPlugin(BasePlugin):
                     wait_instance.task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
                     wait_instances.remove(wait_instance)
             time.sleep(1)
+
 
 @attr.s
 class HttpWait:
