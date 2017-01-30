@@ -127,7 +127,7 @@ class ContainerInstance:
     links = attr.ib(default=attr.Factory(dict))
     devmodes = attr.ib(default=attr.Factory(set))
     ports = attr.ib(default=attr.Factory(dict))
-    environment = attr.ib(default=attr.Fatcory(dict))
+    environment = attr.ib(default=attr.Factory(dict))
     command = attr.ib(default=None)
     foreground = attr.ib(default=None)
     formation = attr.ib(default=None, init=False)
