@@ -10,6 +10,7 @@ from .introspect import FormationIntrospector
 from .towline import Towline
 from .images import ImageRepository
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError, DockerInteractiveException, ImageNotFoundException, NotFoundException
 from ..utils.threading import ExceptionalThread
 
@@ -196,7 +197,7 @@ class FormationRunner:
         self.remove_stopped(instance)
 
         # Run plugins
-        self.app.run_hooks("pre-start", host=self.host, instance=instance, task=start_task)
+        self.app.run_hooks(PluginHook.PRE_START, host=self.host, instance=instance, task=start_task)
 
         # See if network exists and if not, create it
         with network_lock:
@@ -309,37 +310,7 @@ class FormationRunner:
         container_details = self.host.client.inspect_container(instance.name)
         instance.ip_address = container_details["NetworkSettings"]["Networks"][instance.formation.network]['IPAddress']
 
-        # Loop through all waits and build instances
-        wait_instances = []
-        for wait in instance.container.waits:
-            # Look up wait in app
-            try:
-                wait_class = self.app.waits[wait["type"]]
-            except KeyError:
-                raise DockerRuntimeError(
-                    "Unknown wait type {} for {}".format(wait["type"], instance.container.name)
-                )
-            # Initialise it and attach a task
-            params = wait.get("params", {})
-            params["instance"] = instance
-            wait_instance = wait_class(**params)
-            wait_instance.task = Task("Waiting for {}".format(wait_instance.description()), parent=start_task)
-            wait_instances.append(wait_instance)
-
-        # Check on them all until they finish
-        while wait_instances:
-            # See if the container actually died
-            if not self.host.container_running(instance.name):
-                start_task.update(status="Dead", status_flavor=Task.FLAVOR_BAD)
-                raise DockerRuntimeError(
-                    "Container {} died while waiting for boot completion".format(instance.container.name)
-                )
-            # Check the waits
-            start_task.update(status="Waiting")
-            for wait_instance in list(wait_instances):
-                if wait_instance.ready():
-                    wait_instance.task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
-                    wait_instances.remove(wait_instance)
-            time.sleep(1)
+        # Run plugins
+        self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
 
         start_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)

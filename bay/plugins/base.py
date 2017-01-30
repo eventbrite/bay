@@ -43,5 +43,8 @@ class BasePlugin(object, metaclass=PluginMetaclass):
     def add_hook(self, hook_type, func):
         self.app.add_hook(hook_type, func)
 
-    def add_wait(self, name, klass):
-        self.app.add_wait(name, klass)
+    def add_catalog_type(self, name):
+        self.app.add_catalog_type(name)
+
+    def add_catalog_item(self, type_name, name, value):
+        self.app.add_catalog_item(type_name, name, value)
