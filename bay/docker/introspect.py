@@ -42,7 +42,7 @@ class FormationIntrospector:
         except KeyError:
             raise DockerRuntimeError(
                 "Cannot find local container for running container {}".format(container_details['Names'])
-           )
+            )
         # Split the image name into a name and tag
         if ":" in container_details['Image']:
             image, image_tag = container_details['Image'].split(":", 1)

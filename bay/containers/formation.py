@@ -103,48 +103,37 @@ class ContainerFormation:
         return iter(self.container_instances.values())
 
 
+@attr.s
 class ContainerInstance:
     """
     Represents a single container as part of an overall ContainerFormation
     request.
+
+    :name: The runtime name of the container, like "eventbrite.core-frontend.1"
+    :container: The Container instance that's backing this container
+    :image: The image name/hash to use for the container
+    :links: A dictionary of {alias_str: ContainerInstance} that maps other containers to links
+    :devmodes: A set of enabled devmode strings as defined on the Container
+    :ports: Exposed ports as {external_port: container_port}
+    :environment: Extra environment variables to set in the container
+    :command: A custom command override (as a list of string arguments, like subprocess.call takes)
+    :foreground: If True, the container is launched in the foreground and a TTY attached
     """
 
-    formation = None
+    name = attr.ib()
+    container = attr.ib()
+    image = attr.ib()
+    image_tag = attr.ib()
+    links = attr.ib(default=attr.Factory(dict))
+    devmodes = attr.ib(default=attr.Factory(set))
+    ports = attr.ib(default=attr.Factory(dict))
+    environment = attr.ib(default=attr.Factory(dict))
+    command = attr.ib(default=None)
+    foreground = attr.ib(default=None)
+    formation = attr.ib(default=None, init=False)
 
-    def __init__(
-            self,
-            name,
-            container,
-            image,
-            image_tag,
-            links=None,
-            devmodes=None,
-            ports=None,
-            environment=None,
-            command=None,
-            foreground=None,
-        ):
-        # The runtime name of the container, like "eventbrite.core-frontend.1"
-        self.name = name
-        # The Container instance that's backing this container
-        self.container = container
-        # The image name/hash to use for the container
-        self.image = image
-        self.image_tag = image_tag
-        # A dictionary of {alias_str: ContainerInstance} that maps other containers to links
-        self.links = links or {}
-        # A set of enabled devmode strings as defined on the Container
-        self.devmodes = devmodes or set()
-        # Exposed ports as {external_port: container_port}
-        self.ports = dict(container.ports.items())
-        if ports:
-            self.ports.update(ports)
-        # Extra environment variables to set in the container
-        self.environment = environment or {}
-        # A custom command override (as a list of string arguments, like subprocess.call takes)
-        self.command = command
-        # If True, the container is launched in the foreground and a TTY attached
-        self.foreground = foreground
+    def __attrs_post_init__(self):
+        self.ports.update(dict(self.container.ports.items()))
         self.validate()
 
     def validate(self):

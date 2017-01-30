@@ -92,7 +92,8 @@ class Builder:
                 encoding="gzip",
                 fileobj=build_context,
                 buildargs=self.container.buildargs,
-                pull=not self.container.build_parent_in_prefix,  # If the parent image is not in prefix, pull it during build
+                # If the parent image is not in prefix, pull it during build
+                pull=not self.container.build_parent_in_prefix,
             )
             for data in result:
                 # Make sure data is a string

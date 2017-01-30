@@ -25,7 +25,10 @@ class SpellcheckableAliasableGroup(click.Group):
         """
         suggestion = spell_correct(cmd_name, self.list_commands(ctx))
         if suggestion:
-            ctx.fail('No such command "{cmd_name}", are you trying to run: {suggestion}?'.format(cmd_name=cmd_name, suggestion=CYAN(suggestion)))
+            ctx.fail('No such command "{cmd_name}", are you trying to run: {suggestion}?'.format(
+                cmd_name=cmd_name,
+                suggestion=CYAN(suggestion),
+            ))
 
     def get_command(self, ctx, cmd_name):
         # Try to get the command directly or via an alias

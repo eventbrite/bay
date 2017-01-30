@@ -64,7 +64,7 @@ class SSHAgentPlugin(BasePlugin):
                 instance.environment['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
             elif required:
                 raise DockerRuntimeError(
-                    "The container {} needs an SSH Agent to run but one is not started".format(instance.container.name),
+                    "The container {} needs an SSH Agent to run but one is not started".format(instance.container.name)
                 )
 
     def container_needs_ssh(self, container, phase):
@@ -123,7 +123,12 @@ class SSHAgentPlugin(BasePlugin):
         # If it's encrypted, then decrypt it
         if b"ENCRYPTED" in key_contents:
             print("Decrypting key %s" % path)
-            rsa_proc = subprocess.Popen(["openssl", "rsa"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            rsa_proc = subprocess.Popen(
+                ["openssl", "rsa"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
             key_contents = rsa_proc.communicate(input=key_contents)[0]
             if rsa_proc.returncode:
                 click.echo(click.style(
