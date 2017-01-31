@@ -1,7 +1,8 @@
 import attr
+import json
 
 from docker.errors import NotFound
-from ..exceptions import ImageNotFoundException
+from ..exceptions import ImageNotFoundException, ImagePullFailure
 
 
 @attr.s
@@ -39,6 +40,54 @@ class ImageRepository:
             return {"latest": self.image_version(image_name, "latest")}
         except ImageNotFoundException:
             return {}
+
+    def pull_image_version(self, image_name, image_tag, fail_silently=False):
+        """
+        Pulls the most recent version of the given image tag from remote
+        docker registry.
+        """
+        registry_url = 'localhost:5000'
+
+        # The string "local" has a special meaning which means the most recent
+        # local image of that name, so we skip the remote call/check.
+        if image_tag == "local":
+            return None
+
+        remote_name = "{registry_url}/{image_name}".format(
+            registry_url=registry_url,
+            image_name=image_name,
+        )
+
+        stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
+        for line in stream:
+            data = json.loads(line)
+            if 'error' in data:
+                if fail_silently:
+                    return
+                else:
+                    raise ImagePullFailure(
+                        data['error'],
+                        remote_name=remote_name,
+                        image_tag=image_tag
+                    )
+
+        # Tag the remote image as the right name
+        try:
+            self.host.client.tag(
+                remote_name + ":" + image_tag,
+                image_name,
+                tag=image_tag,
+                force=True
+            )
+        except NotFound:
+            if fail_silently:
+                return
+            else:
+                raise ImagePullFailure(
+                    'Failed to tag {}:{}'.format(remote_name, image_name),
+                    remote_name=remote_name,
+                    image_tag=image_tag
+                )
 
     def image_version(self, image_name, image_tag):
         """
