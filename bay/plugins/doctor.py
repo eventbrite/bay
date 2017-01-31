@@ -33,7 +33,7 @@ class BaseExamination:
     """
 
     app = attr.ib()
-    description = None
+    description = attr.ib(default=None, init=False)
 
     class Failure(BaseException):
         """
