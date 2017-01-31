@@ -32,8 +32,10 @@ class BaseExamination:
     If it returns without raising, it is considered successful.
     """
 
+    # Class-level attribute for the check description
+    description = None
+
     app = attr.ib()
-    description = attr.ib(default=None, init=False)
 
     class Failure(BaseException):
         """
