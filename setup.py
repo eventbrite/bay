@@ -1,10 +1,17 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 from bay import __version__
 
 setup(
     name='bay',
     version=__version__,
-    packages=find_packages(),
+    packages=[
+        "bay",
+        "bay.cli",
+        "bay.containers",
+        "bay.docker",
+        "bay.plugins",
+        "bay.utils",
+    ],
     include_package_data=True,
     install_requires=[
         'attrs',
