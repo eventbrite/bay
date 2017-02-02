@@ -2,7 +2,9 @@ import attr
 import json
 
 from docker.errors import NotFound
+
 from ..exceptions import ImageNotFoundException, ImagePullFailure
+from ..cli.tasks import Task
 
 
 @attr.s
