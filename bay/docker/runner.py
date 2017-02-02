@@ -10,7 +10,7 @@ from .introspect import FormationIntrospector
 from .towline import Towline
 from ..cli.tasks import Task
 from ..constants import PluginHook
-from ..exceptions import DockerRuntimeError, DockerInteractiveException, ImageNotFoundException, NotFoundException
+from ..exceptions import DockerRuntimeError, DockerInteractiveException, NotFoundException
 from ..utils.threading import ExceptionalThread
 
 
