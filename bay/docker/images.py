@@ -34,7 +34,11 @@ class ImageRepository:
         Returns a dictionary of version name mapped to the image hash for a
         given image name. May return empty dictionary if there are no images.
         """
-        raise NotImplementedError()
+        # TODO: Expand to read all tags locally, not just a fixed list
+        try:
+            return {"latest": self.image_version(image_name, "latest")}
+        except ImageNotFoundException:
+            return {}
 
     def image_version(self, image_name, image_tag):
         """

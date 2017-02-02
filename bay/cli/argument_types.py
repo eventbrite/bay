@@ -51,6 +51,10 @@ class ContainerType(SpellCorrectChoice):
 
     @cached_property
     def choices(self):
+        # Handle no object in the context during error states
+        if not hasattr(self.context, "obj"):
+            return []
+        # Return valid choices
         containers = self.context.obj.containers
         choices = [container.name
                    for container in containers]
