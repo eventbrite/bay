@@ -115,7 +115,7 @@ class FormationRunner:
             time.sleep(0.1)
 
     def stop_container(self, instance):
-        stop_task = Task("Stopping {}".format(instance.name), parent=self.task)
+        stop_task = Task("Stopping {}".format(instance.container.name), parent=self.task)
         self.host.client.stop(instance.name)
         stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
@@ -184,7 +184,7 @@ class FormationRunner:
         """
         Creates the Docker container on the host, ready to be started.
         """
-        start_task = Task("Starting {}".format(instance.name), parent=self.task)
+        start_task = Task("Starting {}".format(instance.container.name), parent=self.task)
 
         self.remove_stopped(instance)
 
@@ -291,9 +291,8 @@ class FormationRunner:
                     )
                 time.sleep(0.5)
 
-        # Fetch IP address of container for use in next parts of the code
-        container_details = self.host.client.inspect_container(instance.name)
-        instance.ip_address = container_details["NetworkSettings"]["Networks"][instance.formation.network]['IPAddress']
+        # Replace the instance with an introspected copy of the live one so it has networking details
+        instance = FormationIntrospector(self.host, self.app.containers).introspect_single_container(instance.name)
 
         # Run plugins
         self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
