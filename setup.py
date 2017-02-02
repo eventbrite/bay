@@ -41,6 +41,7 @@ setup(
         doctor = bay.plugins.doctor:DoctorPlugin
         gc = bay.plugins.gc:GcPlugin
         hosts = bay.plugins.hosts:HostsPlugin
+        images = bay.plugins.images:ImagesPlugin
         legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
         mounts = bay.plugins.mounts:DevModesPlugin
         profile = bay.plugins.profile:ProfilesPlugin
