@@ -94,7 +94,8 @@ class BootPlugin(BasePlugin):
                 if required:
                     click.echo(RED("Cannot launch required boot container {} - no image".format(container.name)))
                     sys.exit(1)
-            to_boot.add(container)
+            else:
+                to_boot.add(container)
         # Boot those containers
         if to_boot:
             boot_task = Task("Running boot containers", parent=task)
