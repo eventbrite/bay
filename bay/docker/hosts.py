@@ -3,6 +3,7 @@ import docker
 import os
 import urllib.parse
 
+from ..exceptions import DockerNotAvailableError
 from ..utils.functional import cached_property, thread_cached_property
 from .images import ImageRepository
 
@@ -113,12 +114,15 @@ class Host(object):
                 verify=True,
             )
         # Make client
-        return docker.Client(
-            base_url=self.url,
-            version="auto",
-            timeout=10,
-            tls=tls,
-        )
+        try:
+            return docker.Client(
+                base_url=self.url,
+                version="auto",
+                timeout=10,
+                tls=tls,
+            )
+        except docker.errors.DockerException:
+            raise DockerNotAvailableError("The docker host at {} is not available".format(self.url))
 
     @thread_cached_property
     def images(self):

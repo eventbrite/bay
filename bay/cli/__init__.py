@@ -7,11 +7,12 @@ import traceback
 import attr
 
 from .alias_group import SpellcheckableAliasableGroup
-from .colors import PURPLE
+from .colors import PURPLE, RED
 from .tasks import RootTask
 from ..config import Config
 from ..constants import PluginHook
 from ..docker.hosts import HostManager
+from ..exceptions import DockerNotAvailableError
 from ..containers.graph import ContainerGraph
 from ..containers.profile import NullProfile, Profile
 from ..utils.sorting import dependency_sort
@@ -112,10 +113,14 @@ class App(object):
 
     def run_hooks(self, hook_type, **kwargs):
         """
-        Runs all hooks of the given type with the given keyword arguments
+        Runs all hooks of the given type with the given keyword arguments.
+
+        Returns True if at least one hook ran, False otherwise.
         """
-        for hook in self.hooks.get(hook_type, []):
+        hooks = self.hooks.get(hook_type, [])
+        for hook in hooks:
             hook(**kwargs)
+        return bool(hooks)
 
     def add_catalog_type(self, name):
         """
@@ -161,6 +166,15 @@ class AppGroup(SpellcheckableAliasableGroup):
     def invoke(self, ctx):
         ctx.obj = self.app
         return super(AppGroup, self).invoke(ctx)
+
+    def main(self, *args, **kwargs):
+        try:
+            return super(AppGroup, self).main(*args, **kwargs)
+        except DockerNotAvailableError as e:
+            # Run the failure hooks, printing a default error if nothing is hooked in
+            if not self.app.run_hooks(PluginHook.DOCKER_FAILURE):
+                click.echo(RED(str(e)))
+            sys.exit(1)
 
 
 @click.command(cls=AppGroup, app_class=App)

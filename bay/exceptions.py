@@ -67,3 +67,9 @@ class DockerInteractiveException(Exception):
 
     def __init__(self, handler):
         self.handler = handler
+
+
+class DockerNotAvailableError(Exception):
+    """
+    Raised when Docker is not available (the socket/machine is gone)
+    """
