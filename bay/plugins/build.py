@@ -25,7 +25,7 @@ class BuildPlugin(BasePlugin):
 
 
 @click.command()
-@click.argument('containers', type=ContainerType(all=True, profile=True), nargs=-1)
+@click.argument('containers', type=ContainerType(profile=True), nargs=-1)
 @click.option('--host', '-h', type=HostType(), default='default')
 @click.option('--cache/--no-cache', default=True)
 @click.option('--recursive/--one', '-r/-1', default=True)
@@ -38,8 +38,9 @@ def build(app, containers, host, cache, recursive, verbose):
     Build container images, along with its build dependencies.
     """
     logfile_name = app.config.get_logging_path('bay', 'build_log_path', app.containers.prefix)
-
+    containers_to_pull = []
     containers_to_build = []
+    pulled_containers = set()
 
     task = Task("Building", parent=app.root_task)
     start_time = datetime.datetime.now().replace(microsecond=0)
@@ -47,6 +48,16 @@ def build(app, containers, host, cache, recursive, verbose):
     # Try to fetch the images for the original set of containers from the
     # docker registry. If successful, don't build that container
     for container in containers:
+        if container is ContainerType.Profile:
+            for con in app.containers:
+                if app.containers.options(con).get('default_boot'):
+                    containers_to_pull.append(con)
+        else:
+            containers_to_build.append(container)
+
+    containers_to_pull = dependency_sort(containers_to_pull, app.containers.dependencies)
+
+    for container in containers_to_pull:
         try:
             host.images.pull_image_version(
                 container.image_name,
@@ -55,19 +66,44 @@ def build(app, containers, host, cache, recursive, verbose):
             )
         except ImagePullFailure:
             containers_to_build.append(container)
+        else:
+            pulled_containers.add(container)
 
-    # Get a list of containers to build with their build dependencies.
-    if recursive:
-        containers_to_build = dependency_sort(containers_to_build, lambda x: [app.containers.build_parent(x)])
+
+    ancestors_to_build = [container]
+    # Run the build for each container
+    for container in containers_to_build:
+        ancestors_to_build.append(container)
+        if recursive:
+            ancestry = dependency_sort(containers_to_build,
+                                       lambda x: [app.containers.build_parent(x)])[:-1]
+            for ancestor in reversed(ancestry):
+                try:
+                    if ancestor not in pulled_containers:
+                        host.images.pull_image_version(
+                            container.image_name,
+                            "latest",
+                            fail_silently=False,
+                        )
+                except ImagePullFailure:
+                    ancestors_to_build.insert(0, ancestor)
+                else:
+                    pulled_containers.add(ancestor)
+                    break
+
+    ancestors_to_build = dependency_sort(ancestors_to_build,
+                                         lambda x: [app.containers.build_parent(x)])
+    ancestors_to_build = [container
+                          for container in ancestors_to_build
+                          if container not in pulled_containers]
 
     task.add_extra_info(
         "Order: {order}".format(
-            order=CYAN(", ".join([container.name for container in containers])),
+            order=CYAN(", ".join([container.name for container in ancestors_to_build])),
         ),
     )
 
-    # Run the build for each container
-    for container in containers_to_build:
+    for container in ancestors_to_build:
         image_builder = Builder(
             host,
             container,
