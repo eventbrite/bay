@@ -84,6 +84,10 @@ class HostType(SpellCorrectChoice):
 
     @cached_property
     def choices(self):
+        # Handle no object in the context during error states
+        if not hasattr(self.context, "obj"):
+            return []
+        # Return valid choices
         choices = [host.alias for host in self.context.obj.hosts]
         return sorted(choices)
 
@@ -98,6 +102,10 @@ class MountType(SpellCorrectChoice):
 
     @cached_property
     def choices(self):
+        # Handle no object in the context during error states
+        if not hasattr(self.context, "obj"):
+            return []
+        # Collapse lists of list of devmode keys into a single set
         choices = set(itertools.chain.from_iterable(
             container.devmodes.keys()
             for container in self.context.obj.containers

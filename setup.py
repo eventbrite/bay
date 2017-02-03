@@ -40,6 +40,7 @@ setup(
         container = bay.plugins.container:ContainerPlugin
         doctor = bay.plugins.doctor:DoctorPlugin
         gc = bay.plugins.gc:GcPlugin
+        help = bay.plugins.help:HelpPlugin
         hosts = bay.plugins.hosts:HostsPlugin
         images = bay.plugins.images:ImagesPlugin
         legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
