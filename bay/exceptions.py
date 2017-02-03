@@ -59,6 +59,7 @@ class ImageNotFoundException(Exception):
         self.image_tag = image_tag
         self.container = container
 
+
 class ImagePullFailure(Exception):
     """
     Raised when the image fails to be pulled or tagged from the docker
@@ -69,6 +70,7 @@ class ImagePullFailure(Exception):
         super(ImagePullFailure, self).__init__(message)
         self.remote_name = remote_name
         self.image_tag = image_tag
+
 
 class DockerInteractiveException(Exception):
     """
