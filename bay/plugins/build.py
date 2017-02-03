@@ -69,7 +69,6 @@ def build(app, containers, host, cache, recursive, verbose):
         else:
             pulled_containers.add(container)
 
-
     ancestors_to_build = [container]
     # Run the build for each container
     for container in containers_to_build:
