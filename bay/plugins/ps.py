@@ -33,5 +33,5 @@ def ps(app, host):
         table.print_row([
             instance.container.name,
             instance.name,
-            instance.image,
+            instance.image_id,
         ])
