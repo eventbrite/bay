@@ -8,7 +8,7 @@ from ..cli.colors import CYAN, GREEN, RED, remove_ansi
 from ..cli.argument_types import ContainerType, HostType
 from ..cli.tasks import Task
 from ..docker.build import Builder
-from ..exceptions import BuildFailureError
+from ..exceptions import BuildFailureError, ImagePullFailure
 from ..utils.sorting import dependency_sort
 
 
@@ -49,10 +49,11 @@ def build(app, containers, host, cache, recursive, verbose):
     for container in containers:
         try:
             host.images.pull_image_version(
-                '{}/{}'.format(app.containers.prefix, container.name),
+                container.image_name,
+                "latest",
                 fail_silently=False,
             )
-        except ImageNotFoundException:
+        except ImagePullFailure:
             containers_to_build.append(containers)
 
     # Get a list of containers to build with their build dependencies.
