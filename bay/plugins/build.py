@@ -8,7 +8,7 @@ from ..cli.colors import CYAN, GREEN, RED, remove_ansi
 from ..cli.argument_types import ContainerType, HostType
 from ..cli.tasks import Task
 from ..docker.build import Builder
-from ..exceptions import BuildFailureError
+from ..exceptions import BuildFailureError, ImagePullFailure
 from ..utils.sorting import dependency_sort
 
 
@@ -39,12 +39,26 @@ def build(app, containers, host, cache, recursive, verbose):
     """
     logfile_name = app.config.get_logging_path('bay', 'build_log_path', app.containers.prefix)
 
+    containers_to_build = []
+
     task = Task("Building", parent=app.root_task)
     start_time = datetime.datetime.now().replace(microsecond=0)
 
+    # Try to fetch the images for the original set of containers from the
+    # docker registry. If successful, don't build that container
+    for container in containers:
+        try:
+            host.images.pull_image_version(
+                container.image_name,
+                "latest",
+                fail_silently=False,
+            )
+        except ImagePullFailure:
+            containers_to_build.append(container)
+
     # Get a list of containers to build with their build dependencies.
     if recursive:
-        containers = dependency_sort(containers, lambda x: [app.containers.build_parent(x)])
+        containers_to_build = dependency_sort(containers_to_build, lambda x: [app.containers.build_parent(x)])
 
     task.add_extra_info(
         "Order: {order}".format(
@@ -53,7 +67,7 @@ def build(app, containers, host, cache, recursive, verbose):
     )
 
     # Run the build for each container
-    for container in containers:
+    for container in containers_to_build:
         image_builder = Builder(
             host,
             container,

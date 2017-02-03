@@ -60,6 +60,18 @@ class ImageNotFoundException(Exception):
         self.container = container
 
 
+class ImagePullFailure(Exception):
+    """
+    Raised when the image fails to be pulled or tagged from the docker
+    remote registry.
+    """
+
+    def __init__(self, message, remote_name=None, image_tag=None):
+        super(ImagePullFailure, self).__init__(message)
+        self.remote_name = remote_name
+        self.image_tag = image_tag
+
+
 class DockerInteractiveException(Exception):
     """
     Raised when a starting thread wants to run an interactive session.
