@@ -61,6 +61,8 @@ class ImageRepository:
 
         stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
         for line in stream:
+            if isinstance(line, bytes):
+                line = line.decode("ascii")
             data = json.loads(line)
             if 'error' in data:
                 if fail_silently:

@@ -1,9 +1,10 @@
-import os
 import datetime
+import io
 import json
-import tempfile
-import tarfile
 import logging
+import os
+import tarfile
+import tempfile
 
 import attr
 from docker.utils import exclude_paths
@@ -155,7 +156,6 @@ class Builder:
         # For each file, add it to the tar with normalisation
         for path in paths:
             disk_location = os.path.join(self.container.path, path)
-            # TODO: Rewrite docker FROM lines with a : in them and raise a warning
             # Directory addition
             if os.path.isdir(disk_location):
                 info = tarfile.TarInfo(name=path)
@@ -179,8 +179,21 @@ class Builder:
                 info.gid = 0
                 info.uname = "root"
                 info.gname = "root"
-                with open(disk_location, "rb") as fh:
-                    tfile.addfile(info, fh)
+                # Rewrite docker FROM lines with a : in them and raise a warning
+                # TODO: Deprecate this!
+                if path.lstrip("/") == self.container.dockerfile_name:
+                    # Read in dockerfile line by line, replacing the FROM line
+                    dockerfile = io.BytesIO()
+                    with open(disk_location, "r") as fh:
+                        for line in fh:
+                            if line.upper().startswith("FROM ") and self.container.build_parent_in_prefix:
+                                line = line.replace(":", "-")
+                            dockerfile.write(line.encode("utf8"))
+                    dockerfile.seek(0)
+                    tfile.addfile(info, dockerfile)
+                else:
+                    with open(disk_location, "rb") as fh:
+                        tfile.addfile(info, fh)
             # Error for anything else
             else:
                 raise ValueError(
