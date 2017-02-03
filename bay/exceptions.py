@@ -61,7 +61,7 @@ class ImageNotFoundException(Exception):
 
 class ImagePullFailure(Exception):
     """
-    Raised when the image fails to be poulled or tagged from the docker
+    Raised when the image fails to be pulled or tagged from the docker
     remote registry.
     """
 

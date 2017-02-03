@@ -72,9 +72,6 @@ class ContainerFormation:
             if dependency in direct_dependencies:
                 links[dependency.name] = instance
         # Look up the image hash to use in the repo
-
-        # Pull image from registry
-        host.images.pull_image_version(conatiner.image_name, "latest", fail_silently=True)
         image_id = host.images.image_version(container.image_name, "latest")
         # Make the instance
         instance = ContainerInstance(

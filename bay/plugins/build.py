@@ -54,7 +54,7 @@ def build(app, containers, host, cache, recursive, verbose):
                 fail_silently=False,
             )
         except ImagePullFailure:
-            containers_to_build.append(containers)
+            containers_to_build.append(container)
 
     # Get a list of containers to build with their build dependencies.
     if recursive:
