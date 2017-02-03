@@ -39,6 +39,7 @@ class WaitsPlugin(BasePlugin):
             # Initialise it and attach a task
             params = wait.get("params", {})
             params["instance"] = instance
+            params["host"] = host
             wait_instance = wait_class(**params)
             wait_instance.task = Task("Waiting for {}".format(wait_instance.description()), parent=task)
             wait_instances.append(wait_instance)
@@ -61,15 +62,48 @@ class WaitsPlugin(BasePlugin):
 
 
 @attr.s
-class HttpWait:
+class TcpWait:
+    """
+    Checks that a TCP port is open
+    """
+
+    instance = attr.ib()
+    host = attr.ib()
+    port = attr.ib(default=80)
+    timeout = attr.ib(default=1)
+
+    def ready(self):
+        try:
+            conn_kwargs = {}
+            if self.timeout:
+                conn_kwargs['timeout'] = self.timeout
+            if self.port not in self.instance.port_mapping:
+                raise DockerRuntimeError("Trying to wait on non-exposed port {}".format(self.port))
+            conn = socket.create_connection(self.target(), **conn_kwargs)
+            conn.close()
+            return True
+        except socket.error:
+            return False
+
+    def target(self):
+        """
+        Returns (host, port) target information.
+        """
+        if self.port not in self.instance.port_mapping:
+            raise DockerRuntimeError("Trying to wait on non-exposed port {}".format(self.port))
+        return (self.host.external_host_address, self.instance.port_mapping[self.port])
+
+    def description(self):
+        return "TCP on port {}".format(self.port)
+
+
+@attr.s
+class HttpWait(TcpWait):
     """
     Checks that a HTTP endpoint exists and returns a good value.
     """
 
-    instance = attr.ib()
-    port = attr.ib(default=80)
     path = attr.ib(default="/")
-    timeout = attr.ib(default=1)
     method = attr.ib(default="GET")
     headers = attr.ib(default=attr.Factory(dict))
     expected_codes = attr.ib(default=attr.Factory(lambda: range(200, 400)))
@@ -77,7 +111,8 @@ class HttpWait:
     connection_class = http.client.HTTPConnection
 
     def ready(self):
-        conn = self.connection_class(self.instance.ip_address, self.port, timeout=self.timeout)
+        addr, port = self.target()
+        conn = self.connection_class(addr, port, timeout=self.timeout)
         # Run wait
         try:
             conn.request(self.method, self.path, headers=self.headers)
@@ -101,31 +136,6 @@ class HttpsWait(HttpWait):
 
     def description(self):
         return "HTTPS on port {}".format(self.port)
-
-
-@attr.s
-class TcpWait:
-    """
-    Checks that a TCP port is open
-    """
-
-    instance = attr.ib()
-    port = attr.ib(default=80)
-    timeout = attr.ib(default=1)
-
-    def ready(self):
-        try:
-            conn_kwargs = {}
-            if self.timeout:
-                conn_kwargs['timeout'] = self.timeout
-            conn = socket.create_connection((self.instance.ip_address, self.port), **conn_kwargs)
-            conn.close()
-            return True
-        except socket.error:
-            return False
-
-    def description(self):
-        return "TCP on port {}".format(self.port)
 
 
 @attr.s

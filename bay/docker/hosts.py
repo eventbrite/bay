@@ -89,6 +89,18 @@ class Host(object):
         )
 
     @cached_property
+    def external_host_address(self):
+        """
+        Returns the address of the host as seen from an external networks and/or
+        a host computer where bay is running against a VM. This is the address which
+        exposed ports would apparently appear on.
+        """
+        if self.url_scheme == "unix":
+            return "127.0.0.1"
+        elif self.url_scheme == "tcp":
+            return self.url_location.split(":", 1)[0]
+
+    @cached_property
     def allow_ssh_agent(self):
         """
         Says if the server is non-shared and thus safe to run ssh-agent on

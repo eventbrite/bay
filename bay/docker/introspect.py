@@ -31,17 +31,33 @@ class FormationIntrospector:
                 self.add_container(container)
         return self.formation
 
+    def introspect_single_container(self, name):
+        """
+        Returns a single container introspected directly.
+        """
+        # Inspect image and list images have different formats, so we use list with filter here to match the other code
+        details = self.host.client.containers(filters={"name": name})
+        if not details:
+            raise DockerRuntimeError("Cannot introspect single container {}".format(name))
+        return self._create_container(details[0])
+
     def add_container(self, container_details):
+        instance = self._create_container(container_details)
+        self.formation.add_instance(instance)
+
+    def _create_container(self, container_details):
         """
-        Adds a container based on its Docker JSON information.
+        Returns a container build from introspected information
         """
+        # Get the name
+        container_name = container_details['Names'][0].lstrip("/")
         # Find the container name in the graph
         try:
-            container_name = container_details['Labels']['com.eventbrite.bay.container']
-            container = self.graph[container_name]
+            labels = container_details['Labels']
+            container = self.graph[labels['com.eventbrite.bay.container']]
         except KeyError:
             raise DockerRuntimeError(
-                "Cannot find local container for running container {}".format(container_details['Names'])
+                "Cannot find local container for running container {}".format(container_name)
             )
         # Get the image hash
         image = container_details['Image']
@@ -55,10 +71,13 @@ class FormationIntrospector:
             image_id = self.host.images.image_version(name, tag)
         # Make a formation instance
         instance = ContainerInstance(
-            name=container_details['Names'][0].lstrip("/"),
+            name=container_name,
             container=container,
             image_id=image_id,
         )
-        # Set extra attributes because it's running
-        instance.ip_address = container_details['NetworkSettings']['Networks']['eventbrite']['IPAddress']
-        self.formation.add_instance(instance)
+        # Set extra networking attributes because it's running
+        instance.ip_address = container_details['NetworkSettings']['Networks'][self.network]['IPAddress']
+        instance.port_mapping = {}
+        for port_details in container_details.get('Ports', []):
+            instance.port_mapping[port_details['PrivatePort']] = port_details['PublicPort']
+        return instance
