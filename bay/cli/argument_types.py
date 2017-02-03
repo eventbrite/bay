@@ -49,6 +49,9 @@ class ContainerType(SpellCorrectChoice):
     _all = attr.ib(default=False)
     _profile = attr.ib(default=False)
 
+    class Profile:
+        pass
+
     @cached_property
     def choices(self):
         # Handle no object in the context during error states
@@ -62,15 +65,17 @@ class ContainerType(SpellCorrectChoice):
             choices = ['profile'] + choices
         if self._all:
             choices = ['all'] + choices
-
         return sorted(choices)
 
     def convert(self, value, param, ctx):
         name = super(ContainerType, self).convert(value, param, ctx)
         if name == 'all':
-            # Return a list of all containers
             return list(self.context.obj.containers.containers.values())
-        return self.context.obj.containers[name]
+        elif name == 'profile':
+            # Return a list of all containers
+            return self.Profile
+        else:
+            return self.context.obj.containers[name]
 
 
 @attr.s
