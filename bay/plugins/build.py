@@ -64,7 +64,6 @@ def build(app, containers, host, cache, recursive, verbose):
     # again later.
     for container in containers_to_pull:
         try:
-            click.echo("Now pulling {}".format(container.image_name))
             host.images.pull_image_version(
                 container.image_name,
                 "latest",
