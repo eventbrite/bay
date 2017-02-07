@@ -64,7 +64,9 @@ def destroy(app, host, container, version):
         sys.exit(1)
     # Run garbage collection on containers
     task = Task("Destroying {}:{}".format(container.image_name, version))
-    GarbageCollector(host).gc_containers(task)
+    garbage_collector = GarbageCollector(host)
+    garbage_collector.gc_containers(task)
+    garbage_collector.gc_remote_tags(task)
     # Destroy it
     host.client.remove_image(image_versions[version])
     task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
