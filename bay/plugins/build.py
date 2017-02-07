@@ -104,14 +104,15 @@ def build(app, containers, host, cache, recursive, verbose):
                     break
 
     # Sort ancestors so we build the most depended on first.
-    ancestors_to_build = dependency_sort(ancestors_to_build,
-                                         lambda x: [app.containers.build_parent(x)])
+    sorted_ancestors_to_build = dependency_sort(ancestors_to_build, lambda x: [app.containers.build_parent(x)])
 
     # dependency_sort would insert back the pulled containers into the ancestry
-    # chain, so we will exclude ones we know we've pulled.
-    ancestors_to_build = [container
-                          for container in ancestors_to_build
-                          if container not in pulled_containers]
+    # chain, so we only include ones that were in the list before
+    ancestors_to_build = [
+        container
+        for container in sorted_ancestors_to_build
+        if container in ancestors_to_build
+    ]
 
     task.add_extra_info(
         "Order: {order}".format(
