@@ -48,7 +48,7 @@ class ImageRepository:
         Pulls the most recent version of the given image tag from remote
         docker registry.
         """
-        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
+        task = None
         registry_url = 'localhost:5000'
 
         # The string "local" has a special meaning which means the most recent
@@ -62,12 +62,13 @@ class ImageRepository:
         )
 
         stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
-        progress = 0
+        layer_status = {}
+        current = 1
+        total = 1
         for line in stream:
             if isinstance(line, bytes):
                 line = line.decode("ascii")
             data = json.loads(line)
-
             if 'error' in data:
                 if fail_silently:
                     return
@@ -78,9 +79,23 @@ class ImageRepository:
                         image_tag=image_tag
                     )
             elif 'id' in data:
+                if task is None:
+                    task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
+
                 if data['status'].lower() == "downloading":
-                    progress += 1
-                    task.update(status="." * progress)
+                    layer_status[data['id']] = data['progressDetail']
+                elif "complete" in data['status'].lower() and data['id'] in layer_status:
+                    layer_status[data['id']]['current'] = layer_status[data['id']]['total']
+
+                if layer_status:
+                    statuses = [x for x in layer_status.values()
+                                if "current" in x and "total" in x]
+                    current = sum(x['current'] for x in statuses)
+                    total = sum(x['total'] for x in statuses)
+
+                task.update(progress=(current, total))
+
+        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
         try:
@@ -99,8 +114,6 @@ class ImageRepository:
                     remote_name=remote_name,
                     image_tag=image_tag
                 )
-
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
     def image_version(self, image_name, image_tag):
         """
