@@ -3,6 +3,7 @@ import json
 
 from docker.errors import NotFound
 
+from ..cli.tasks import Task
 from ..exceptions import ImageNotFoundException, ImagePullFailure
 
 
@@ -42,11 +43,12 @@ class ImageRepository:
         except ImageNotFoundException:
             return {}
 
-    def pull_image_version(self, image_name, image_tag, fail_silently=False):
+    def pull_image_version(self, image_name, image_tag, parent_task, fail_silently=False):
         """
         Pulls the most recent version of the given image tag from remote
         docker registry.
         """
+        task = None
         registry_url = 'localhost:5000'
 
         # The string "local" has a special meaning which means the most recent
@@ -60,6 +62,9 @@ class ImageRepository:
         )
 
         stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
+        layer_status = {}
+        current = 1
+        total = 1
         for line in stream:
             if isinstance(line, bytes):
                 line = line.decode("ascii")
@@ -73,6 +78,26 @@ class ImageRepository:
                         remote_name=remote_name,
                         image_tag=image_tag
                     )
+            elif 'id' in data:
+                if data['status'].lower() == "downloading":
+                    if task is None:
+                        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
+                    layer_status[data['id']] = data['progressDetail']
+
+                elif "complete" in data['status'].lower() and data['id'] in layer_status:
+                    layer_status[data['id']]['current'] = layer_status[data['id']]['total']
+
+                if layer_status:
+                    statuses = [x for x in layer_status.values()
+                                if "current" in x and "total" in x]
+                    current = sum(x['current'] for x in statuses)
+                    total = sum(x['total'] for x in statuses)
+
+                if task is not None:
+                    task.update(progress=(current, total))
+
+        if task is not None:
+            task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
         try:
