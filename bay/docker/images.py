@@ -79,11 +79,11 @@ class ImageRepository:
                         image_tag=image_tag
                     )
             elif 'id' in data:
-                if task is None:
-                    task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
-
                 if data['status'].lower() == "downloading":
+                    if task is None:
+                        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
                     layer_status[data['id']] = data['progressDetail']
+
                 elif "complete" in data['status'].lower() and data['id'] in layer_status:
                     layer_status[data['id']]['current'] = layer_status[data['id']]['total']
 
@@ -93,9 +93,11 @@ class ImageRepository:
                     current = sum(x['current'] for x in statuses)
                     total = sum(x['total'] for x in statuses)
 
-                task.update(progress=(current, total))
+                if task is not None:
+                    task.update(progress=(current, total))
 
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        if task is not None:
+            task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
         try:
