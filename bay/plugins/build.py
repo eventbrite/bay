@@ -41,6 +41,7 @@ def build(app, containers, host, cache, recursive, verbose):
     containers_to_pull = []
     containers_to_build = []
     pulled_containers = set()
+    failed_pulls = set()
 
     task = Task("Building", parent=app.root_task)
     start_time = datetime.datetime.now().replace(microsecond=0)
@@ -71,6 +72,7 @@ def build(app, containers, host, cache, recursive, verbose):
                 fail_silently=False,
             )
         except ImagePullFailure:
+            failed_pulls.add(container)
             containers_to_build.append(container)
         else:
             pulled_containers.add(container)
@@ -89,15 +91,21 @@ def build(app, containers, host, cache, recursive, verbose):
                                        lambda x: [app.containers.build_parent(x)])[:-1]
             for ancestor in reversed(ancestry):
                 try:
+                    # If we've already attempted to pull it and failed, short
+                    # circuit to failure block.
+                    if ancestor in failed_pulls:
+                        raise ImagePullFailure()
+
                     # Check if we've pulled it already
                     if ancestor not in pulled_containers:
                         host.images.pull_image_version(
-                            container.image_name,
+                            ancestor.image_name,
                             "latest",
                             parent_task=task,
                             fail_silently=False,
                         )
                 except ImagePullFailure:
+                    failed_pulls.add(ancestor)
                     ancestors_to_build.insert(0, ancestor)
                 else:
                     # We've pulled the current ancestor successfully, so skip
