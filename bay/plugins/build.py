@@ -67,7 +67,7 @@ def build(app, containers, host, cache, recursive, verbose):
         try:
             host.images.pull_image_version(
                 container.image_name,
-                "latest",
+                container.image_tag,
                 parent_task=task,
                 fail_silently=False,
             )
@@ -99,7 +99,7 @@ def build(app, containers, host, cache, recursive, verbose):
                     if ancestor not in pulled_containers:
                         host.images.pull_image_version(
                             ancestor.image_name,
-                            "latest",
+                            ancestor.image_tag,
                             parent_task=task,
                             fail_silently=False,
                         )
