@@ -210,6 +210,7 @@ class Task:
             time.sleep(0.1)
             if self.output_needs_updating:
                 self.clear_and_output(force=True)
+                self.output_needs_updating = False
 
 
 class RootTask(Task):
