@@ -1,7 +1,9 @@
 import threading
+import time
 import shutil
 
 from .colors import CYAN, GREEN, RED, YELLOW
+from ..utils.threading import ExceptionalThread
 
 
 UP_ONE = "\033[A\033[1000D"
@@ -44,6 +46,9 @@ class Task:
         self.finished = False
         # Number of lines we had previously cleared
         self.cleared_lines = 0
+        # Any currently running output thread
+        self.current_output_thread = None
+        self.output_needs_updating = False
         # Run update
         self.update()
 
@@ -152,31 +157,59 @@ class Task:
         for subtask in self.subtasks:
             subtask.output(indent=indent + 1)
 
-    def clear_and_output(self):
+    def clear_and_output(self, force=False):
         """
         Clears the terminal up to the right line then outputs the information
         of the task.
         """
-        with console_lock:
-            # Scroll the terminal down/up enough for any new lines
-            needed_lines = self.lines()
-            new_lines = needed_lines - self.cleared_lines
-            if new_lines > 0:
-                print("\n" * new_lines, flush=True, end="")
-            elif new_lines < 0:
+        # If there's an output thread, use that instead
+        if self.current_output_thread and not force:
+            self.output_needs_updating = True
+            # Ensure any errors appear on the console eventually
+            self.current_output_thread.maybe_raise()
+        # Print to screen
+        else:
+            with console_lock:
+                # Scroll the terminal down/up enough for any new lines
+                needed_lines = self.lines()
+                new_lines = needed_lines - self.cleared_lines
+                if new_lines > 0:
+                    print("\n" * new_lines, flush=True, end="")
+                elif new_lines < 0:
+                    print(
+                        (UP_ONE + CLEAR_LINE) * abs(new_lines),
+                        flush=True,
+                        end="",
+                    )
+                self.cleared_lines = needed_lines
+                # Move cursor to top of cleared section
                 print(
-                    (UP_ONE + CLEAR_LINE) * abs(new_lines),
+                    (UP_ONE + CLEAR_LINE) * needed_lines,
                     flush=True,
                     end="",
                 )
-            self.cleared_lines = needed_lines
-            # Move cursor to top of cleared section
-            print(
-                (UP_ONE + CLEAR_LINE) * needed_lines,
-                flush=True,
-                end="",
-            )
-            self.output()
+                self.output()
+
+    def start_output_thread(self):
+        """
+        Starts an output thread, which switches the outputting over to periodic
+        thread checking rather than synchronous.
+        """
+        assert self.current_output_thread is None
+        self.current_output_thread = ExceptionalThread(
+            target=self.output_thread,
+            daemon=True,
+        )
+        self.current_output_thread.start()
+
+    def output_thread(self):
+        """
+        Outputs changes at a maximum rate to reduce pointless console redraw.
+        """
+        while True:
+            time.sleep(0.1)
+            if self.output_needs_updating:
+                self.clear_and_output(force=True)
 
 
 class RootTask(Task):

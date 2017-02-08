@@ -38,6 +38,7 @@ class App(object):
         self.hosts = HostManager.from_config(self.config)
         self.containers = ContainerGraph(self.config["bay"]["home"])
         self.root_task = RootTask()
+        self.root_task.start_output_thread()
 
     def load_plugins(self):
         """
