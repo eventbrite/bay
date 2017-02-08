@@ -6,6 +6,8 @@ Bay is a tool for assisting creation and management of Docker_
 containers for development use.  It allows you to supplement a ``Dockerfile``
 with additional information on how to run and link containers together.
 
+It's currently in beta; documentation and more information is forthcoming.
+
 .. _Docker: https://www.docker.com
 
 
@@ -98,8 +100,8 @@ Copyright 2017 Eventbrite Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this project except in compliance with the License.
 
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0,
+or included in this repository as the LICENSE file.
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
