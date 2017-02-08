@@ -94,8 +94,7 @@ def build(app, containers, host, cache, recursive, verbose):
                     # If we've already attempted to pull it and failed, short
                     # circuit to failure block.
                     if ancestor in failed_pulls:
-                        raise ImagePullFailure()
-
+                        raise ImagePullFailure("We've already attempted to pull this image, and failed.")
                     # Check if we've pulled it already
                     if ancestor not in pulled_containers:
                         host.images.pull_image_version(
