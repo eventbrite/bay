@@ -98,15 +98,10 @@ class SSHAgentPlugin(BasePlugin):
         Returns paths to the current user's SSH keys
         """
         options = [
-            "~/.ssh-host/id_dsa",
-            "~/.ssh-host/id_rsa",
-            "~/.ssh-host/id_ecdsa",
-            "~/.ssh-host/identity",
             "~/.ssh/id_ecdsa",
             "~/.ssh/id_rsa",
             "~/.ssh/id_dsa",
             "~/.ssh/identity",
-            "~/.ssh/id_dsa.eb",
         ]
         for option in options:
             path = os.path.expanduser(option)
