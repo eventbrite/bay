@@ -7,7 +7,7 @@ import attr
 from ..exceptions import BadConfigError
 
 
-@attr.s(cmp=False)
+@attr.s
 class Container:
     """
     Represents a single container type that's available to run (not a running container -
@@ -19,11 +19,11 @@ class Container:
     parent_pattern = re.compile(r'^FROM\s+([\S/]+)', re.IGNORECASE | re.MULTILINE)
     git_volume_pattern = re.compile(r'\{git@github.com:eventbrite/([\w\s]+).git\}')
 
-    graph = attr.ib(repr=False, hash=False)
-    path = attr.ib(repr=False, hash=True)
-    suffix = attr.ib(repr=False, hash=False)
-    dockerfile_name = attr.ib(repr=False, hash=False)
-    name = attr.ib(init=False, repr=True, hash=False)
+    graph = attr.ib(repr=False, hash=False, cmp=False)
+    path = attr.ib(repr=False, hash=True, cmp=True)
+    suffix = attr.ib(repr=False, hash=False, cmp=False)
+    dockerfile_name = attr.ib(repr=False, hash=False, cmp=False)
+    name = attr.ib(init=False, repr=True, hash=True, cmp=True)
 
     def __attrs_post_init__(self):
         self.load()
@@ -180,21 +180,3 @@ class Container:
         value = self.get_parent_value("devmodes", {})
         value.update(self._devmodes)
         return value
-
-    def __eq__(self, other):
-        return self.path == other.path
-
-    def __ne__(self, other):
-        return not (self == other)
-
-    def __lt__(self, other):
-        """
-        Compare the string lengths of the name of containers
-        """
-        return self.name < other.name
-
-    def __gt__(self, other):
-        """
-        Compare the string lengths of the name of containers
-        """
-        return self.name > other.name
