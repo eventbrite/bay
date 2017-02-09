@@ -131,12 +131,13 @@ class Container:
         self.build_checks = config_data.get("build_checks", [])
         self._devmodes = config_data.get("devmodes", {})
         self.foreground = config_data.get("foreground", False)
+        self.image_tag = config_data.get("image_tag", "local")
         self.buildargs = {}
         # Store all extra data so plugins can get to it
         self.extra_data = {
             key: value
             for key, value in config_data.items()
-            if key not in ["ports", "build_checks", "devmodes", "foreground", "links", "waits", "volumes"]
+            if key not in ["ports", "build_checks", "devmodes", "foreground", "links", "waits", "volumes", "image_tag"]
         }
 
     def get_parent_value(self, name, default):

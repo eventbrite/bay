@@ -54,7 +54,14 @@ class ImageRepository:
         # The string "local" has a special meaning which means the most recent
         # local image of that name, so we skip the remote call/check.
         if image_tag == "local":
-            return None
+            if fail_silently:
+                return None
+            else:
+                raise ImagePullFailure(
+                    "Cannot pull a local image",
+                    remote_name=None,
+                    image_tag=image_tag
+                )
 
         remote_name = "{registry_url}/{image_name}".format(
             registry_url=registry_url,

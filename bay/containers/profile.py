@@ -107,6 +107,9 @@ class Profile:
                     int(a): int(b)
                     for a, b in details["ports"].items()
                 }
+            # Apply any image tag override
+            if "image_tag" in details:
+                container.image_tag = details['image_tag']
 
     def calculate_links(self, container):
         """
