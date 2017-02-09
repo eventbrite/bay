@@ -21,6 +21,7 @@ class Config(object):
         "bay": {
             "home": str,
             "build_log_path": str,
+            "user_data_path": str,
             "user_profile_home": str,
             "ssh_agent_container": str,
             "port_proxy_container": str,
@@ -34,6 +35,7 @@ class Config(object):
         "bay": {
             "home": os.path.expanduser(os.environ.get("BAY_HOME", ".")),
             "build_log_path": os.path.expanduser('~/.bay/{prefix}/build.log'),
+            "user_data_path": os.path.expanduser('~/.bay/{prefix}'),
             "user_profile_home": os.path.expanduser('~/.bay'),
             "ssh_agent_container": "tugboat/ssh-agent",
             "port_proxy_container": "tugboat/port-proxy",
@@ -84,12 +86,12 @@ class Config(object):
     def __getitem__(self, key):
         return self.data[key]
 
-    def get_logging_path(self, section, key, prefix):
+    def get_path(self, section, key, app):
         """
         Returns the given configuration value, but substituting {prefix} with the
         passed prefix, and making any parent directories. Must be used for file paths.
         """
-        value = self.data[section][key].replace("{prefix}", prefix)
+        value = self.data[section][key].replace("{prefix}", app.containers.prefix)
         dirname = os.path.dirname(value)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
