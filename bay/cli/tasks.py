@@ -210,7 +210,7 @@ class Task:
         """
         while True:
             time.sleep(0.1)
-            if self.output_needs_updating and not self.paused_output:
+            if self.output_needs_updating and not self.output_paused:
                 self.clear_and_output(force=True)
                 self.output_needs_updating = False
 
@@ -219,7 +219,7 @@ class Task:
         Allows the output to be paused and unpaused by finding the parent and doing it there.
         """
         if self.parent is None:
-            self.paused_output = pause
+            self.output_paused = pause
         else:
             self.parent._pause_output(pause)
 
