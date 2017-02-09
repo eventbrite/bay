@@ -1,3 +1,4 @@
+import contextlib
 import threading
 import time
 import shutil
@@ -49,6 +50,7 @@ class Task:
         # Any currently running output thread
         self.current_output_thread = None
         self.output_needs_updating = False
+        self.output_paused = False
         # Run update
         self.update()
 
@@ -208,9 +210,27 @@ class Task:
         """
         while True:
             time.sleep(0.1)
-            if self.output_needs_updating:
+            if self.output_needs_updating and not self.paused_output:
                 self.clear_and_output(force=True)
                 self.output_needs_updating = False
+
+    def _pause_output(self, pause=True):
+        """
+        Allows the output to be paused and unpaused by finding the parent and doing it there.
+        """
+        if self.parent is None:
+            self.paused_output = pause
+        else:
+            self.parent._pause_output(pause)
+
+    @contextlib.contextmanager
+    def paused_output(self):
+        """
+        Context manager that pauses printing of output until it's exited.
+        """
+        self._pause_output(True)
+        yield
+        self._pause_output(False)
 
 
 class RootTask(Task):

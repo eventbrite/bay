@@ -51,7 +51,7 @@ class BuildVolumesPlugin(BasePlugin):
                         logfile_name=self.app.config.get_logging_path(
                             'bay',
                             'build_log_path',
-                            self.app.containers.prefix,
+                            self.app,
                         ),
                         verbose=True,
                     ).build()

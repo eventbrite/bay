@@ -4,7 +4,7 @@ import json
 from docker.errors import NotFound
 
 from ..cli.tasks import Task
-from ..exceptions import ImageNotFoundException, ImagePullFailure
+from ..exceptions import ImageNotFoundException, ImagePullFailure, BadConfigError
 
 
 @attr.s
@@ -43,13 +43,33 @@ class ImageRepository:
         except ImageNotFoundException:
             return {}
 
-    def pull_image_version(self, image_name, image_tag, parent_task, fail_silently=False):
+    def get_registry_url(self, app, task):
+        """
+        Gets the current registry URL based on the app config, returning the
+        URL to pass to docker to pull things, and running any plugin processes
+        in the meantime.
+        """
+        # Get the registry from the app
+        registry = app.containers.registry
+
+        # Work out what plugin to use
+        plugin_name, registry_data = registry.split(":", 1)
+
+        # Call the plugin to log in/etc to the registry
+        registry_plugins = app.get_catalog_items("registry")
+        if plugin_name == "plain":
+            # The "plain" plugin is a shortcut for "no plugin"
+            return registry_data
+        elif plugin_name in registry_plugins:
+            return registry_plugins[plugin_name](registry_data, self.host, task)
+        else:
+            raise BadConfigError("No registry plugin {} loaded".format(plugin_name))
+
+    def pull_image_version(self, app, image_name, image_tag, parent_task, fail_silently=False):
         """
         Pulls the most recent version of the given image tag from remote
         docker registry.
         """
-        task = None
-        registry_url = 'localhost:5000'
 
         # The string "local" has a special meaning which means the most recent
         # local image of that name, so we skip the remote call/check.
@@ -63,6 +83,10 @@ class ImageRepository:
                     image_tag=image_tag
                 )
 
+        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
+
+        registry_url = self.get_registry_url(app, task)
+
         remote_name = "{registry_url}/{image_name}".format(
             registry_url=registry_url,
             image_name=image_name,
@@ -70,8 +94,8 @@ class ImageRepository:
 
         stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
         layer_status = {}
-        current = 1
-        total = 1
+        current = None
+        total = None
         for line in stream:
             if isinstance(line, bytes):
                 line = line.decode("ascii")
@@ -87,8 +111,6 @@ class ImageRepository:
                     )
             elif 'id' in data:
                 if data['status'].lower() == "downloading":
-                    if task is None:
-                        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
                     layer_status[data['id']] = data['progressDetail']
 
                 elif "complete" in data['status'].lower() and data['id'] in layer_status:
@@ -100,11 +122,10 @@ class ImageRepository:
                     current = sum(x['current'] for x in statuses)
                     total = sum(x['total'] for x in statuses)
 
-                if task is not None:
+                if total is not None:
                     task.update(progress=(current, total))
 
-        if task is not None:
-            task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
         try:
@@ -129,6 +150,8 @@ class ImageRepository:
         Returns the Docker image hash of the requested image and tag, or
         raises ImageNotFoundException if it's not available on the host.
         """
+        if image_tag == "local":
+            image_tag = "latest"
         try:
             docker_info = self.host.client.inspect_image("{}:{}".format(image_name, image_tag))
             return docker_info['Id']

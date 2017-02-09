@@ -22,6 +22,7 @@ class BuildPlugin(BasePlugin):
 
     def load(self):
         self.add_command(build)
+        self.add_catalog_type("registry")
 
 
 @click.command()
@@ -37,7 +38,7 @@ def build(app, containers, host, cache, recursive, verbose):
     """
     Build container images, along with its build dependencies.
     """
-    logfile_name = app.config.get_logging_path('bay', 'build_log_path', app.containers.prefix)
+    logfile_name = app.config.get_path('bay', 'build_log_path', app)
     containers_to_pull = []
     containers_to_build = []
     pulled_containers = set()
@@ -66,6 +67,7 @@ def build(app, containers, host, cache, recursive, verbose):
     for container in containers_to_pull:
         try:
             host.images.pull_image_version(
+                app,
                 container.image_name,
                 container.image_tag,
                 parent_task=task,
@@ -98,6 +100,7 @@ def build(app, containers, host, cache, recursive, verbose):
                     # Check if we've pulled it already
                     if ancestor not in pulled_containers:
                         host.images.pull_image_version(
+                            app,
                             ancestor.image_name,
                             ancestor.image_tag,
                             parent_task=task,
