@@ -11,10 +11,13 @@ from .towline import Towline
 from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError, DockerInteractiveException, NotFoundException
-from ..utils.threading import ExceptionalThread
+from ..utils.threading import ExceptionalThread, ThreadSet
 
 
 network_lock = threading.Lock()
+
+# Tracks which containers are being started/stopped globally to avoid starting the same one twice.
+changing_containers = ThreadSet()
 
 
 class FormationRunner:
@@ -115,9 +118,15 @@ class FormationRunner:
             time.sleep(0.1)
 
     def stop_container(self, instance):
-        stop_task = Task("Stopping {}".format(instance.container.name), parent=self.task)
-        self.host.client.stop(instance.name)
-        stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        # Wait for the global container manipulation lock
+        with changing_containers.entry_lock(instance.name):
+            # See if it was already stopped
+            if not self.host.container_running(instance.name, ignore_exists=True):
+                return
+            # Stop the container
+            stop_task = Task("Stopping {}".format(instance.container.name), parent=self.task)
+            self.host.client.stop(instance.name)
+            stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
     # Starting
 
@@ -184,117 +193,123 @@ class FormationRunner:
         """
         Creates the Docker container on the host, ready to be started.
         """
-        start_task = Task("Starting {}".format(instance.container.name), parent=self.task)
+        # Wait for the global container manipulation lock
+        with changing_containers.entry_lock(instance.name):
+            # See if the container was already started
+            if self.host.container_running(instance.name, ignore_exists=True):
+                return
 
-        self.remove_stopped(instance)
+            start_task = Task("Starting {}".format(instance.container.name), parent=self.task)
 
-        # Run plugins
-        self.app.run_hooks(PluginHook.PRE_START, host=self.host, instance=instance, task=start_task)
+            self.remove_stopped(instance)
 
-        # See if network exists and if not, create it
-        with network_lock:
-            try:
-                self.host.client.inspect_network(instance.formation.network)
-            except NotFound:
-                self.host.client.create_network(
-                    name=instance.formation.network,
-                    driver="bridge",
-                )
+            # Run plugins
+            self.app.run_hooks(PluginHook.PRE_START, host=self.host, instance=instance, task=start_task)
 
-        # Create network configuration for the new container
-        networking_config = self.host.client.create_networking_config({
-            instance.formation.network: self.host.client.create_endpoint_config(
-                aliases=[instance.formation.network],
-                links=[
-                    (link.name, alias)
-                    for alias, link in instance.links.items()
-                ]
-            ),
-        })
-
-        # Work out volumes configuration
-        volume_mountpoints = []
-        volume_binds = {}
-        for mount_path, source in instance.container.bound_volumes.items():
-            if not os.path.isdir(source):
-                raise DockerRuntimeError(
-                    "Volume mount source directory {} does not exist".format(source)
-                )
-            volume_mountpoints.append(mount_path)
-            volume_binds[source] = {"bind": mount_path, "mode": "rw"}
-        for mount_path, source in instance.container.named_volumes.items():
-            volume_mountpoints.append(mount_path)
-            volume_binds[source] = {"bind": mount_path, "mode": "rw"}
-
-        for mount_name in instance.devmodes:
-            mount_config = instance.container.devmodes[mount_name]
-            for mount_path, source in mount_config.items():
-                volume_mountpoints.append(mount_path)
-                git_match = instance.container.git_volume_pattern.match(source)
-                if git_match:
-                    source = os.path.abspath("../{}/".format(git_match.group(1)))
-
-                if os.path.exists(source):
-                    volume_binds[source] = {"bind": mount_path, "mode": "rw"}
-                else:
-                    raise NotFoundException("The source path does not exist")
-
-        # Create container
-        container_pointer = self.host.client.create_container(
-            instance.image_id,
-            command=instance.command,
-            detach=not instance.foreground,
-            stdin_open=instance.foreground,
-            tty=instance.foreground,
-            # Ports is a list of ports in the container to expose
-            ports=list(instance.ports.keys()),
-            environment=instance.environment,
-            volumes=volume_mountpoints,
-            name=instance.name,
-            host_config=self.host.client.create_host_config(
-                binds=volume_binds,
-                port_bindings=instance.ports,
-                publish_all_ports=True,
-                security_opt=['seccomp:unconfined'],
-            ),
-            networking_config=networking_config,
-            labels={
-                "com.eventbrite.bay.container": instance.container.name,
-            }
-        )
-
-        # Foreground containers launch into a PTY at this point. We use an exception so that
-        # it happens in the main thread.
-        if instance.foreground:
-            def handler():
-                dockerpty.start(self.host.client, container_pointer)
-                self.host.client.remove_container(container_pointer)
-            start_task.finish(status="Going to shell", status_flavor=Task.FLAVOR_GOOD)
-            raise DockerInteractiveException(handler)
-
-        else:
-            # Make a towline instance and wait on it
-            self.host.client.start(container_pointer)
-            towline = Towline(self.host, instance.name)
-            while True:
-                status, message = towline.status
-                if status is None:
-                    if message is not None:
-                        start_task.update(status=message)
-                elif status is True:
-                    break
-                elif status is False:
-                    raise DockerRuntimeError(
-                        "Container {} failed to boot!".format(instance.container.name),
-                        code="BOOT_FAIL",
-                        instance=instance,
+            # See if network exists and if not, create it
+            with network_lock:
+                try:
+                    self.host.client.inspect_network(instance.formation.network)
+                except NotFound:
+                    self.host.client.create_network(
+                        name=instance.formation.network,
+                        driver="bridge",
                     )
-                time.sleep(0.5)
 
-        # Replace the instance with an introspected copy of the live one so it has networking details
-        instance = FormationIntrospector(self.host, self.app.containers).introspect_single_container(instance.name)
+            # Create network configuration for the new container
+            networking_config = self.host.client.create_networking_config({
+                instance.formation.network: self.host.client.create_endpoint_config(
+                    aliases=[instance.formation.network],
+                    links=[
+                        (link.name, alias)
+                        for alias, link in instance.links.items()
+                    ]
+                ),
+            })
 
-        # Run plugins
-        self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
+            # Work out volumes configuration
+            volume_mountpoints = []
+            volume_binds = {}
+            for mount_path, source in instance.container.bound_volumes.items():
+                if not os.path.isdir(source):
+                    raise DockerRuntimeError(
+                        "Volume mount source directory {} does not exist".format(source)
+                    )
+                volume_mountpoints.append(mount_path)
+                volume_binds[source] = {"bind": mount_path, "mode": "rw"}
+            for mount_path, source in instance.container.named_volumes.items():
+                volume_mountpoints.append(mount_path)
+                volume_binds[source] = {"bind": mount_path, "mode": "rw"}
 
-        start_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+            for mount_name in instance.devmodes:
+                mount_config = instance.container.devmodes[mount_name]
+                for mount_path, source in mount_config.items():
+                    volume_mountpoints.append(mount_path)
+                    git_match = instance.container.git_volume_pattern.match(source)
+                    if git_match:
+                        source = os.path.abspath("../{}/".format(git_match.group(1)))
+
+                    if os.path.exists(source):
+                        volume_binds[source] = {"bind": mount_path, "mode": "rw"}
+                    else:
+                        raise NotFoundException("The source path does not exist")
+
+            # Create container
+            container_pointer = self.host.client.create_container(
+                instance.image_id,
+                command=instance.command,
+                detach=not instance.foreground,
+                stdin_open=instance.foreground,
+                tty=instance.foreground,
+                # Ports is a list of ports in the container to expose
+                ports=list(instance.ports.keys()),
+                environment=instance.environment,
+                volumes=volume_mountpoints,
+                name=instance.name,
+                host_config=self.host.client.create_host_config(
+                    binds=volume_binds,
+                    port_bindings=instance.ports,
+                    publish_all_ports=True,
+                    security_opt=['seccomp:unconfined'],
+                ),
+                networking_config=networking_config,
+                labels={
+                    "com.eventbrite.bay.container": instance.container.name,
+                }
+            )
+
+            # Foreground containers launch into a PTY at this point. We use an exception so that
+            # it happens in the main thread.
+            if instance.foreground:
+                def handler():
+                    dockerpty.start(self.host.client, container_pointer)
+                    self.host.client.remove_container(container_pointer)
+                start_task.finish(status="Going to shell", status_flavor=Task.FLAVOR_GOOD)
+                raise DockerInteractiveException(handler)
+
+            else:
+                # Make a towline instance and wait on it
+                self.host.client.start(container_pointer)
+                towline = Towline(self.host, instance.name)
+                while True:
+                    status, message = towline.status
+                    if status is None:
+                        if message is not None:
+                            start_task.update(status=message)
+                    elif status is True:
+                        break
+                    elif status is False:
+                        raise DockerRuntimeError(
+                            "Container {} failed to boot!".format(instance.container.name),
+                            code="BOOT_FAIL",
+                            instance=instance,
+                        )
+                    time.sleep(0.5)
+
+            # Replace the instance with an introspected copy of the live one so it has networking details
+            instance = FormationIntrospector(self.host, self.app.containers).introspect_single_container(instance.name)
+
+            # Run plugins
+            self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
+
+            start_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
