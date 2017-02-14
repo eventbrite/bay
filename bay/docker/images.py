@@ -51,6 +51,8 @@ class ImageRepository:
         """
         # Get the registry from the app
         registry = app.containers.registry
+        if registry is None:
+            return None
 
         # Work out what plugin to use
         plugin_name, registry_data = registry.split(":", 1)
@@ -86,6 +88,15 @@ class ImageRepository:
         task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
 
         registry_url = self.get_registry_url(app, task)
+        if registry_url is None:
+            if fail_silently:
+                return None
+            else:
+                raise ImagePullFailure(
+                    "No registry configured",
+                    remote_name=None,
+                    image_tag=image_tag
+                )
 
         remote_name = "{registry_url}/{image_name}".format(
             registry_url=registry_url,
