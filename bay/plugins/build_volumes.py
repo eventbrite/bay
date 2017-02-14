@@ -48,7 +48,7 @@ class BuildVolumesPlugin(BasePlugin):
                         providers[name],
                         self.app,
                         parent_task=task,
-                        logfile_name=self.app.config.get_logging_path(
+                        logfile_name=self.app.config.get_path(
                             'bay',
                             'build_log_path',
                             self.app,
