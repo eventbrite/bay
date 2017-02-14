@@ -1,5 +1,6 @@
 import attr
 import click
+import os
 import subprocess
 import sys
 
@@ -32,8 +33,12 @@ def attach(app, container, host, shell):
     formation = FormationIntrospector(host, app.containers).introspect()
     for instance in formation:
         if instance.container == container:
+            # Work out anything to put before the shell (e.g. ENV)
+            pre_args = []
+            if os.environ.get("TERM", None):
+                pre_args = ["env", "TERM=%s" % os.environ['TERM']]
             # Launch into an attached shell
-            status_code = subprocess.call(["docker", "exec", "-it", instance.name, shell])
+            status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + [shell])
             sys.exit(status_code)
     # It's not running ;(
     click.echo(RED("Container {} is not running. It must be started to attach.".format(container.name)))
