@@ -96,23 +96,27 @@ class Builder:
                 # If the parent image is not in prefix, pull it during build
                 pull=not self.container.build_parent_in_prefix,
             )
-            for data in result:
-                # Make sure data is a string
-                if isinstance(data, bytes):
-                    data = data.decode("utf8")
-                data = json.loads(data)
-                if 'stream' in data:
-                    # docker data stream has extra newlines in it, so we will
-                    # strip them before logging.
-                    self.logger.info(data['stream'].rstrip())
-                    if data['stream'].startswith('Step '):
-                        progress += 1
-                        self.task.update(status="." * progress)
-                if 'error' in data:
-                    self.logger.info(data['error'].rstrip())
-                    build_successful = False
+            with self.task.rate_limit() as limited_task:
+                self.logger.task = limited_task
+                for data in result:
+                    # Make sure data is a string
+                    if isinstance(data, bytes):
+                        data = data.decode("utf8")
+                    data = json.loads(data)
+                    if 'stream' in data:
+                        # docker data stream has extra newlines in it, so we will
+                        # strip them before logging.
+                        self.logger.info(data['stream'].rstrip())
+                        if data['stream'].startswith('Step '):
+                            progress += 1
+                            self.task.update(status="." * progress)
+                    if 'error' in data:
+                        self.logger.info(data['error'].rstrip())
+                        build_successful = False
+                self.logger.task = self.task
 
             if not build_successful:
+                self.task.finish(status="FAILED", status_flavor=Task.FLAVOR_BAD)
                 raise FailedCommandException
 
         except FailedCommandException:

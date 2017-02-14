@@ -1,8 +1,5 @@
-import atexit
 import contextlib
-import os
 import shutil
-import sys
 import threading
 import time
 
@@ -50,9 +47,7 @@ class Task:
         self.finished = False
         # Number of lines we had previously cleared
         self.cleared_lines = 0
-        # Any currently running output thread
-        self.current_output_thread = None
-        self.output_needs_updating = False
+        # If the output is currently "paused" for other things to write to the console
         self.output_paused = False
         # Run update
         self.update()
@@ -162,78 +157,36 @@ class Task:
         for subtask in self.subtasks:
             subtask.output(indent=indent + 1)
 
-    def clear_and_output(self, force=False):
+    def clear_and_output(self):
         """
         Clears the terminal up to the right line then outputs the information
         of the task.
         """
-        # If there's an output thread, use that instead
-        if self.current_output_thread and not force:
-            self.output_needs_updating = True
-            # Ensure any errors appear on the console eventually
-            self.current_output_thread.maybe_raise()
-        # Print to screen
-        else:
-            with console_lock:
-                # Scroll the terminal down/up enough for any new lines
-                needed_lines = self.lines()
-                new_lines = needed_lines - self.cleared_lines
-                if new_lines > 0:
-                    print("\n" * new_lines, flush=True, end="")
-                elif new_lines < 0:
-                    print(
-                        (UP_ONE + CLEAR_LINE) * abs(new_lines),
-                        flush=True,
-                        end="",
-                    )
-                self.cleared_lines = needed_lines
-                # Move cursor to top of cleared section
+        # See if output is paused
+        if self.output_paused:
+            return
+        # OK, print
+        with console_lock:
+            self.last_output_time = time.time()
+            # Scroll the terminal down/up enough for any new lines
+            needed_lines = self.lines()
+            new_lines = needed_lines - self.cleared_lines
+            if new_lines > 0:
+                print("\n" * new_lines, flush=True, end="")
+            elif new_lines < 0:
                 print(
-                    (UP_ONE + CLEAR_LINE) * needed_lines,
+                    (UP_ONE + CLEAR_LINE) * abs(new_lines),
                     flush=True,
                     end="",
                 )
-                self.output()
-
-    def start_output_thread(self):
-        """
-        Starts an output thread, which switches the outputting over to periodic
-        thread checking rather than synchronous.
-        """
-        assert self.current_output_thread is None
-        self.current_output_thread = ExceptionalThread(
-            target=self.output_thread,
-            daemon=True,
-        )
-        self.current_output_thread.start()
-        atexit.register(self.atexit_output_thread)
-        sys.excepthook = self.atexit_excepthook
-
-    def atexit_output_thread(self):
-        """
-        Runs at program exit to print the output one more time if an exception
-        has not occurred (in case the thread is sleeping while exiting and misses output)
-        """
-        self.clear_and_output(force=True)
-
-    def atexit_excepthook(self, exctype, value, traceback):
-        """
-        Runs at program exit to print the output one more time if an exception
-        has not occurred (in case the thread is sleeping while exiting and misses output)
-        """
-        atexit.unregister(self.atexit_output_thread)
-        sys.__excepthook__(exctype, value, traceback)
-        os._exit(1)
-
-    def output_thread(self):
-        """
-        Outputs changes at a maximum rate to reduce pointless console redraw.
-        """
-        while True:
-            time.sleep(0.1)
-            if self.output_needs_updating and not self.output_paused:
-                self.clear_and_output(force=True)
-                self.output_needs_updating = False
+            self.cleared_lines = needed_lines
+            # Move cursor to top of cleared section
+            print(
+                (UP_ONE + CLEAR_LINE) * needed_lines,
+                flush=True,
+                end="",
+            )
+            self.output()
 
     def _pause_output(self, pause=True):
         """
@@ -241,6 +194,10 @@ class Task:
         """
         if self.parent is None:
             self.output_paused = pause
+            if not pause:
+                # Make the output rewrite from where it is
+                self.cleared_lines = 0
+                self.clear_and_output()
         else:
             self.parent._pause_output(pause)
 
@@ -252,6 +209,45 @@ class Task:
         self._pause_output(True)
         yield
         self._pause_output(False)
+
+    @contextlib.contextmanager
+    def rate_limit(self, interval=0.1):
+        """
+        Context manager that rate-limits updates on tasks
+        """
+        buffered_changes = {"running": True}
+
+        # Thread loop that flushes every interval
+        def flusher():
+            while buffered_changes['running']:
+                # Do any extra_info calls
+                if "set_extra_info" in buffered_changes:
+                    self.set_extra_info(buffered_changes['set_extra_info'])
+                    del buffered_changes['set_extra_info']
+                # Do any update calls
+                if "update" in buffered_changes:
+                    self.update(**buffered_changes['update'])
+                    del buffered_changes['update']
+                # Sleep
+                time.sleep(interval)
+
+        # Fake task object to provide out
+        class BufferedTask(object):
+            def set_extra_info(self, extra_info):
+                self.buffered_changes['set_extra_info'] = extra_info
+            def update(self, **kwargs):
+                self.buffered_changes['update'] = kwargs
+
+        # Start thread that flushes every interval
+        flush_thread = ExceptionalThread(target=flusher, daemon=True)
+        flush_thread.start()
+
+        # Run inner code
+        yield BufferedTask()
+
+        # Do one more flush and exit
+        buffered_changes['running'] = False
+        flush_thread.join()
 
 
 class RootTask(Task):
