@@ -35,6 +35,8 @@ class ContainerGraph:
         """
         Loads top-level configuration
         """
+        self.prefix = None
+        self.registry = None
         # Work out the path to the configuration file
         self.config_path = os.path.join(self.path, "bay.yaml")
         if not os.path.isfile(self.config_path):
@@ -53,6 +55,8 @@ class ContainerGraph:
                 self.registry = value
             else:
                 raise BadConfigError("Unknown key in %s: %s" % (self.config_path, key))
+        if self.prefix is None:
+            raise BadConfigError("No prefix set in top-level tug.yaml {}".format(self.config_path))
 
     def load_containers(self):
         """

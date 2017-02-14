@@ -1,7 +1,10 @@
+import atexit
 import contextlib
+import os
+import shutil
+import sys
 import threading
 import time
-import shutil
 
 from .colors import CYAN, GREEN, RED, YELLOW
 from ..utils.threading import ExceptionalThread
@@ -203,6 +206,24 @@ class Task:
             daemon=True,
         )
         self.current_output_thread.start()
+        atexit.register(self.atexit_output_thread)
+        sys.excepthook = self.atexit_excepthook
+
+    def atexit_output_thread(self):
+        """
+        Runs at program exit to print the output one more time if an exception
+        has not occurred (in case the thread is sleeping while exiting and misses output)
+        """
+        self.clear_and_output(force=True)
+
+    def atexit_excepthook(self, exctype, value, traceback):
+        """
+        Runs at program exit to print the output one more time if an exception
+        has not occurred (in case the thread is sleeping while exiting and misses output)
+        """
+        atexit.unregister(self.atexit_output_thread)
+        sys.__excepthook__(exctype, value, traceback)
+        os._exit(1)
 
     def output_thread(self):
         """
