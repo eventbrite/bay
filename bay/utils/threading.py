@@ -1,5 +1,7 @@
+import contextlib
 import sys
 import threading
+import time
 
 
 class ExceptionalThread(threading.Thread):
@@ -33,3 +35,35 @@ class ExceptionalThread(threading.Thread):
     def maybe_raise(self):
         if self.__exception is not None:
             raise self.__exception[1]
+
+
+class ThreadSet(set):
+    """
+    Threadsafe set extended with check-and-set style operations
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(ThreadSet, self).__init__(*args, **kwargs)
+        self.lock = threading.Lock()
+
+    def check_and_add(self, value):
+        """
+        Checks if value is in the set and if it is not, adds it.
+        Returns False if value is already in the set, True if value was not in the set and was added.
+        """
+        with self.lock:
+            if value in self:
+                return False
+            self.add(value)
+            return True
+
+    @contextlib.contextmanager
+    def entry_lock(self, value, interval=1):
+        """
+        Context manager that allows entry when the value is not in the set, and removes it
+        once finished.
+        """
+        while not self.check_and_add(value):
+            time.sleep(interval)
+        yield
+        self.remove(value)

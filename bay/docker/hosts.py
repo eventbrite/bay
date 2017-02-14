@@ -153,11 +153,13 @@ class Host(object):
         except docker.errors.APIError:
             return False
 
-    def container_running(self, name):
+    def container_running(self, name, ignore_exists=False):
         """
         Says if the named container is running or not. Errors if you provide
         a container that does not exist.
         """
+        if ignore_exists and not self.container_exists(name):
+            return False
         data = self.client.inspect_container(name)
         return data['State']['Running']
 
