@@ -233,8 +233,10 @@ class Task:
 
         # Fake task object to provide out
         class BufferedTask(object):
+
             def set_extra_info(self, extra_info):
                 self.buffered_changes['set_extra_info'] = extra_info
+
             def update(self, **kwargs):
                 self.buffered_changes['update'] = kwargs
 
