@@ -89,19 +89,22 @@ class App(object):
         )
 
         if os.path.exists(user_profile_path):
-            user_profile = Profile(user_profile_path)
+            self.user_profile = Profile(user_profile_path)
         else:
-            user_profile = NullProfile()
+            self.user_profile = NullProfile()
 
-        if user_profile.parent_profile:
-            parent_profile = Profile(os.path.join(
-                self.config["bay"]["home"],
-                "profiles",
-                "{}.yaml".format(user_profile.parent_profile)
-            ))
-            parent_profile.apply(self.containers)
+        if self.user_profile.parent_profile:
+            self.parent_profile = Profile(
+                os.path.join(
+                    self.config["bay"]["home"],
+                    "profiles",
+                    "{}.yaml".format(self.user_profile.parent_profile)
+                ),
+                default_boot_compatability=True,
+            )
+            self.parent_profile.apply(self.containers)
 
-        user_profile.apply(self.containers)
+        self.user_profile.apply(self.containers)
 
     def add_hook(self, hook_type, receiver):
         """
@@ -150,6 +153,14 @@ class App(object):
         Given a plugin's class, returns the instance of it we have loaded.
         """
         return self.plugins[klass]
+
+    def invoke(self, command_name, **kwargs):
+        """
+        Runs a [sub]command by name, passing context automatically.
+        """
+        context = click.get_current_context()
+        command = cli.get_command(context, command_name)
+        context.invoke(command, **kwargs)
 
 
 class AppGroup(SpellcheckableAliasableGroup):

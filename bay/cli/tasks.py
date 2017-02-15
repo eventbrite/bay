@@ -26,8 +26,10 @@ class Task:
     FLAVOR_BAD = "bad"
     FLAVOR_WARNING = "warning"
 
-    def __init__(self, name, parent=None):
+    def __init__(self, name, parent=None, hide_if_empty=False):
         self.name = name
+        # If this task only displays if it has children
+        self.hide_if_empty = False
         # Any parent tasks to trigger updates in
         self.parent = parent
         with console_lock:
@@ -105,6 +107,8 @@ class Task:
         """
         Returns the number of console lines this task will need to print itself.
         """
+        if self.hide_if_empty and not self.subtasks:
+            return 0
         return 1 + sum(subtask.lines() for subtask in self.subtasks) + len(self.extra_info)
 
     def make_progress_bar(self, count, total, width=30):
@@ -127,6 +131,8 @@ class Task:
         Assumes that the screen is already cleared and the cursor is in the right
         place.
         """
+        if self.hide_if_empty and not self.subtasks:
+            return
         # Get terminal width
         terminal_width = shutil.get_terminal_size((80, 20)).columns
         # Work out progress text

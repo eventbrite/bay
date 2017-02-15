@@ -3,7 +3,6 @@ import click
 import sys
 
 from .base import BasePlugin
-from .tail import tail as tail_command
 from ..cli.argument_types import ContainerType, HostType
 from ..cli.colors import RED
 from ..cli.tasks import Task
@@ -32,13 +31,12 @@ class RunPlugin(BasePlugin):
 @click.command()
 @click.argument("containers", type=ContainerType(), nargs=-1)
 @click.option("--host", "-h", type=HostType(), default="default")
-@click.option("--tail/--notail", "-t", default=False)
-@click.pass_context
-def run(ctx, containers, host, tail):
+@click.option("--follow/--nofollow", "-f", default=False)
+@click.pass_obj
+def run(app, containers, host, follow):
     """
     Runs containers by name, including any dependencies needed
     """
-    app = ctx.obj
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
     # Make a Formation that represents what we want to do by taking the existing
@@ -53,11 +51,11 @@ def run(ctx, containers, host, tail):
     task = Task("Starting containers", parent=app.root_task)
     run_formation(app, host, formation, task)
     # If they asked to tail, then run tail
-    if tail:
+    if follow:
         if len(containers) != 1:
             click.echo(RED("You cannot tail more than one container!"))
             sys.exit(1)
-        ctx.invoke(tail_command, host=host, container=containers[0], follow=True)
+        app.invoke("tail", host=host, container=containers[0], follow=True)
 
 
 @click.command()

@@ -61,3 +61,9 @@ def container(app, container=None):
         click.echo(CYAN("Bind-mounted volumes:"))
         for mount_point, source in container.bound_volumes.items():
             click.echo("  {}: {}".format(mount_point, source))
+        # Devmodes
+        click.echo(CYAN("Mounts (devmodes):"))
+        for name, mounts in container.devmodes.items():
+            click.echo("  {}:".format(name))
+            for mount_point, source in mounts.items():
+                click.echo("    {}: {}".format(mount_point, source))

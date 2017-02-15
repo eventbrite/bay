@@ -18,10 +18,10 @@ class ContainerGraph:
     containers to start by default.
     """
     path = attr.ib(convert=os.path.abspath)
-    containers = attr.ib(default=attr.Factory(dict), init=False)
-    _dependencies = attr.ib(default=attr.Factory(dict))
-    _build_dependencies = attr.ib(default=attr.Factory(dict), init=False)
-    _options = attr.ib(default=attr.Factory(dict), init=False)
+    containers = attr.ib(default=attr.Factory(dict), init=False, repr=False)
+    _dependencies = attr.ib(default=attr.Factory(dict), repr=False)
+    _build_dependencies = attr.ib(default=attr.Factory(dict), init=False, repr=False)
+    _options = attr.ib(default=attr.Factory(dict), init=False, repr=False)
     config_path = attr.ib(init=False)
 
     def __attrs_post_init__(self):
