@@ -48,6 +48,9 @@ class BasePlugin(object, metaclass=PluginMetaclass):
     def add_command(self, func):
         self.app.cli.add_command(func)
 
+    def add_alias(self, command_name, alias):
+        self.app.cli.add_alias(command_name, alias)
+
     def add_hook(self, hook_type, func):
         self.app.add_hook(hook_type, func)
 

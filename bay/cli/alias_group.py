@@ -23,7 +23,7 @@ class SpellcheckableAliasableGroup(click.Group):
         """
         Uses edit distance to suggest a command if there's no match.
         """
-        suggestion = spell_correct(cmd_name, self.list_commands(ctx))
+        suggestion = spell_correct(cmd_name, self.list_commands(ctx) + list(self.aliases.keys()))
         if suggestion:
             ctx.fail('No such command "{cmd_name}", are you trying to run: {suggestion}?'.format(
                 cmd_name=cmd_name,

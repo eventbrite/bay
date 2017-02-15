@@ -19,8 +19,11 @@ class RunPlugin(BasePlugin):
 
     def load(self):
         self.add_command(run)
+        self.add_alias(run, "start")
         self.add_command(shell)
         self.add_command(stop)
+        self.add_command(restart)
+        self.add_alias(restart, "hup")
 
 
 @click.command()
@@ -86,6 +89,18 @@ def stop(app, containers, host):
     # Run the change
     task = Task("Stopping containers", parent=app.root_task)
     run_formation(app, host, formation, task)
+
+
+@click.command()
+@click.argument("containers", type=ContainerType(), nargs=-1)
+@click.option("--host", "-h", type=HostType(), default="default")
+@click.pass_context
+def restart(ctx, containers, host):
+    """
+    Stops and then starts containers.
+    """
+    ctx.invoke(stop, containers=containers, host=host)
+    ctx.invoke(run, containers=containers, host=host)
 
 
 def run_formation(app, host, formation, task):
