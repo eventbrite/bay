@@ -116,7 +116,6 @@ class Builder:
                 self.logger.task = self.task
 
             if not build_successful:
-                self.task.finish(status="FAILED", status_flavor=Task.FLAVOR_BAD)
                 raise FailedCommandException
 
         except FailedCommandException:
