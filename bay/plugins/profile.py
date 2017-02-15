@@ -9,7 +9,7 @@ from ..cli.argument_types import HostType
 from ..cli.colors import CYAN, RED
 from ..cli.tasks import Task
 from ..containers.profile import Profile
-from ..containers.formation import ContainerFormation
+from ..docker.introspect import FormationIntrospector
 
 
 @attr.s
@@ -17,6 +17,8 @@ class ProfilesPlugin(BasePlugin):
     """
     Plugin for managing and switching profiles.
     """
+
+    provides = ["up"]
 
     def load(self):
         self.add_command(profile)
@@ -90,10 +92,14 @@ def profile(app, name, up, host):
 def up(app, host):
     """
     Start up a profile by booting the default containers.
+    Leaves any other containers that are running (shell, ssh-agent, etc.) alone.
     """
-    formation = ContainerFormation(app.containers)
+    formation = FormationIntrospector(host, app.containers).introspect()
     for container in app.containers:
         if app.containers.options(container).get('default_boot'):
+            for instance in list(formation):
+                if instance.container == container:
+                    formation.remove_instance(instance)
             formation.add_container(container, host)
 
     task = Task("Restarting containers", parent=app.root_task)

@@ -17,7 +17,7 @@ class Container:
     even if the actual running server is remote.
     """
     parent_pattern = re.compile(r'^FROM\s+([\S/]+)', re.IGNORECASE | re.MULTILINE)
-    git_volume_pattern = re.compile(r'\{git@github.com:eventbrite/([\w\s]+).git\}')
+    git_volume_pattern = re.compile(r'^\{git@github.com:eventbrite/([\w\s]+).git\}(.*)$')
 
     graph = attr.ib(repr=False, hash=False, cmp=False)
     path = attr.ib(repr=False, hash=True, cmp=True)
@@ -115,7 +115,7 @@ class Container:
             # TODO: Add warning here once we've converted enough of the dockerfiles
             git_match = self.git_volume_pattern.match(source)
             if git_match:
-                source = "../{}/".format(git_match.group(1))
+                source = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
             # Split named volumes and directory mounts up
             if "/" in source:
                 self._bound_volumes[mount_point] = os.path.abspath(os.path.join(self.graph.path, source))
@@ -126,10 +126,22 @@ class Container:
         # TODO: Deprecate volumes_mount
         for mount_point, source in config_data.get("volumes_mount", {}).items():
             self._named_volumes[mount_point] = source
+        # Devmodes might also have git URLs
+        self._devmodes = {}
+        for name, mounts in config_data.get("devmodes", {}).items():
+            # Allow for empty devmodes
+            if not mounts:
+                continue
+            # Add each mount individually
+            self._devmodes[name] = {}
+            for mount_point, source in mounts.items():
+                git_match = self.git_volume_pattern.match(source)
+                if git_match:
+                    source = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
+                self._devmodes[name][mount_point] = source
         # Ports is a dict of {port on container: host exposed port}
         self.ports = config_data.get("ports", {})
         self.build_checks = config_data.get("build_checks", [])
-        self._devmodes = config_data.get("devmodes", {})
         self.foreground = config_data.get("foreground", False)
         self.image_tag = config_data.get("image_tag", "local")
         self.buildargs = {}

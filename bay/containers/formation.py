@@ -1,4 +1,5 @@
 import attr
+import warnings
 
 from ..exceptions import BadConfigError
 from ..utils.sorting import dependency_sort
@@ -21,10 +22,10 @@ class ContainerFormation:
     to the host; higher-level management of a set of different hosts is done
     elsewhere.
     """
-    graph = attr.ib()
+    graph = attr.ib(repr=False)
     network = attr.ib(default=None)  # a string network name, defaults to graph.prefix
-    _instances = attr.ib(default=attr.Factory(list))
-    container_instances = attr.ib(default=attr.Factory(dict), init=False)
+    _instances = attr.ib(default=attr.Factory(list), repr=False)
+    container_instances = attr.ib(default=attr.Factory(dict), init=False, repr=False)
 
     def __attrs_post_init__(self):
         if self.network is None:
@@ -32,6 +33,10 @@ class ContainerFormation:
 
         for instance in self._instances:
             self.add_instance(instance)
+
+    def validate(self):
+        for instance in self:
+            instance.validate()
 
     def add_instance(self, instance):
         """
@@ -45,7 +50,15 @@ class ContainerFormation:
         """
         Removes an instance from the formation
         """
+        # Make sure the instance being removed is part of us
         assert instance.formation is self
+        # Resolve the dependent containers so they can all be removed
+        dependent_descendency = set(dependency_sort([instance.container], self.graph.dependents)[:-1])
+        for other_instance in list(self):
+            if other_instance.container in dependent_descendency:
+                other_instance.formation = None
+                del self.container_instances[other_instance.name]
+        # Remove the requested container
         del self.container_instances[instance.name]
         instance.formation = None
 
@@ -94,6 +107,12 @@ class ContainerFormation:
             new.add_instance(instance.clone())
         return new
 
+    def has_container(self, container):
+        """
+        Returns True if the formation has an instance running the given container.
+        """
+        return any(instance.container == container for instance in self)
+
     def __getitem__(self, key):
         return self.container_instances[key]
 
@@ -124,17 +143,16 @@ class ContainerInstance:
     name = attr.ib()
     container = attr.ib()
     image_id = attr.ib()
-    links = attr.ib(default=attr.Factory(dict))
-    devmodes = attr.ib(default=attr.Factory(set))
-    ports = attr.ib(default=attr.Factory(dict))
-    environment = attr.ib(default=attr.Factory(dict))
-    command = attr.ib(default=None)
-    foreground = attr.ib(default=None)
-    formation = attr.ib(default=None, init=False)
+    links = attr.ib(default=attr.Factory(dict), repr=False)
+    devmodes = attr.ib(default=attr.Factory(set), repr=False)
+    ports = attr.ib(default=attr.Factory(dict), repr=False)
+    environment = attr.ib(default=attr.Factory(dict), repr=False)
+    command = attr.ib(default=None, repr=False)
+    foreground = attr.ib(default=None, repr=False)
+    formation = attr.ib(default=None, init=False, repr=False)
 
     def __attrs_post_init__(self):
         self.ports.update(dict(self.container.ports.items()))
-        self.validate()
 
     def validate(self):
         """
@@ -142,6 +160,8 @@ class ContainerInstance:
         """
         # Verify all link targets are possible
         for alias, target in self.links.items():
+            if isinstance(target, str):
+                raise ValueError("Link target {} is still a string!".format(target))
             if target.container not in self.container.graph.dependencies(self.container):
                 raise BadConfigError("It is not possible to link %s to %s as %s" % (target, self.container, alias))
         # Verify devmodes exist
@@ -182,6 +202,29 @@ class ContainerInstance:
             other.foreground or
             self.foreground
         )
+
+    def resolve_links(self):
+        """
+        Resolves any links that are still names to instances from the formation
+        """
+        for alias, target in list(self.links.items()):
+            # If it's a string, it's come from an introspection process where we couldn't
+            # resolve into an instance at the time (as not all of them were around)
+            if isinstance(target, str):
+                try:
+                    target = self.formation[target]
+                except KeyError:
+                    # We don't error here as that would prevent you stopping orphaned containers;
+                    # instead, we delete the link and warn the user. The deleted link means `up` will recreate it
+                    # if it's orphaned.
+                    del self.links[alias]
+                    warnings.warn("Could not resolve link {} to an instance for {}".format(target, self.name))
+                else:
+                    self.links[alias] = target
+            elif isinstance(target, ContainerInstance):
+                pass
+            else:
+                raise ValueError("Invalid link value {}".format(repr(target)))
 
     def __eq__(self, other):
         return self.name == other.name

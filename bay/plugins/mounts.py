@@ -1,16 +1,12 @@
 from collections import defaultdict
-import os
 
 import attr
 import click
 
 from .base import BasePlugin
-from .run import run_formation
 from ..cli.argument_types import ContainerType, HostType, MountType
 from ..cli.colors import CYAN, GREEN, PURPLE
 from ..cli.tasks import Task
-from ..containers.profile import NullProfile, Profile
-from ..docker.introspect import FormationIntrospector
 
 
 @attr.s
@@ -19,10 +15,13 @@ class DevModesPlugin(BasePlugin):
     Plugin for managing dev checkouts in a container.
     """
 
+    requires = ["up"]
+
     def load(self):
         self.add_command(mounts)
         self.add_command(mount)
         self.add_command(unmount)
+        self.add_alias(unmount, "umount")
 
 
 @click.command()
@@ -57,47 +56,14 @@ def mount(app, mount, container, host):
     """
     Mount a dev checkout in a given container.
     """
-    user_profile_path = os.path.join(
-        app.config["bay"]["user_profile_home"],
-        app.containers.prefix,
-        "user_profile.yaml"
-    )
-
-    if os.path.isfile(user_profile_path):
-        profile = Profile(user_profile_path)
-    else:
-        profile = NullProfile()
+    # Check the profile is loaded
+    if app.user_profile.file_path is None:
         click.echo("No profile loaded. Please select a profile using `bay profile <profile_name>`")
         return
-
-    if not isinstance(container, list):
-        containers = [container]
-    else:
-        containers = container
-
-    update_required = False
-
-    for con in containers:
-        if mount in con.devmodes and mount not in profile.containers.get(con.name, {}).get('devmodes', set()):
-            click.echo("Mounting {} to container {}".format(PURPLE(mount), CYAN(con.name)))
-            if not profile.containers.get(con.name):
-                profile.containers[con.name] = {'devmodes': set([mount])}
-            elif not profile.containers[con.name].get('devmodes'):
-                profile.containers[con.name]['devmodes'] = set([mount])
-            else:
-                profile.containers[con.name]['devmodes'].add(mount)
-            update_required = True
-
-    if update_required:
-        profile.save()
-        profile.apply(app.containers)
-        # restart all the running containers
-        formation = FormationIntrospector(host, app.containers).introspect()
-        for con in containers:
-            formation.add_container(con, host)
-
-        task = Task("Restarting containers", parent=app.root_task)
-        run_formation(app, host, formation, task)
+    # Add the devmode
+    mutate_devmounts(app, container, add=[mount])
+    # Run tug up to apply any changes
+    app.invoke("up")
 
 
 @click.command()
@@ -109,38 +75,56 @@ def unmount(app, mount, container, host):
     """
     Unmount a dev checkoutin a given container.
     """
-    user_profile_path = os.path.join(
-        app.config["bay"]["user_profile_home"],
-        app.containers.prefix,
-        "user_profile.yaml"
-    )
-
-    if os.path.isfile(user_profile_path):
-        profile = Profile(user_profile_path)
-    else:
-        profile = NullProfile()
+    # Check the profile is loaded
+    if app.user_profile.file_path is None:
         click.echo("No profile loaded. Please select a profile using `bay profile <profile_name>`")
         return
+    # Remove the devmode
+    mutate_devmounts(app, container, remove=[mount])
+    # Run tug up to apply any changes
+    app.invoke("up")
 
-    if not isinstance(container, list):
-        containers = [container]
+
+def mutate_devmounts(app, containers, add=None, remove=None):
+    """
+    Applies devmount changes to a set of containers in a profile.
+    """
+    # Give add/remove good defaults
+    add = add or []
+    remove = remove or []
+
+    # Convert any single instance of a container into a singleton list
+    if not isinstance(containers, list):
+        containers = [containers]
     else:
-        containers = container
+        containers = containers
 
-    update_required = False
-    for con in containers:
-        if mount in con.devmodes and mount in profile.containers.get(con.name, {}).get('devmodes', set()):
-            click.echo("Unmounting {} from container {}".format(PURPLE(mount), CYAN(con.name)))
-            profile.containers[con.name]['devmodes'].remove(mount)
-            update_required = True
+    # For each provided container, try mounting
+    profile = app.user_profile
+    changed_containers = set()
+    # Mounts to add
+    for mount in add:
+        task = Task("Mounting {}".format(mount), parent=app.root_task)
+        for con in sorted(containers, key=lambda c: c.name):
+            if mount in con.devmodes and mount not in profile.containers.get(con.name, {}).get('devmodes', set()):
+                subtask = Task(con.name, parent=task)
+                if not profile.containers.get(con.name):
+                    profile.containers[con.name] = {}
+                if not profile.containers[con.name].get('devmodes'):
+                    profile.containers[con.name]['devmodes'] = set()
+                profile.containers[con.name]['devmodes'].add(mount)
+                changed_containers.add(con)
+                subtask.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+    # Mounts to remove
+    for mount in remove:
+        task = Task("Unmounting {}".format(mount), parent=app.root_task)
+        for con in sorted(containers, key=lambda c: c.name):
+            if mount in con.devmodes and mount in profile.containers.get(con.name, {}).get('devmodes', set()):
+                subtask = Task(con.name, parent=task)
+                profile.containers[con.name]['devmodes'].remove(mount)
+                changed_containers.add(con)
+                subtask.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
-    if update_required:
+    if changed_containers:
         profile.save()
         profile.apply(app.containers)
-        # restart all the running containers
-        formation = FormationIntrospector(host, app.containers).introspect()
-        for con in containers:
-            formation.add_container(con, host)
-
-        task = Task("Restarting containers", parent=app.root_task)
-        run_formation(app, host, formation, task)

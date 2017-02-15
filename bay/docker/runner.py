@@ -42,6 +42,8 @@ class FormationRunner:
         Runs through and performs all the actions. Blocks until completion.
         """
         self.actions = []
+        # Check the formation is valid
+        self.formation.validate()
         # Work out what containers need turning off, and which need turning on
         # Containers that have changes will need both.
         to_stop = set()
@@ -66,6 +68,55 @@ class FormationRunner:
         if to_start:
             self.start_containers(to_start)
 
+    # Shared "dependency-based parallel execution" code
+
+    def parallel_execute(self, instances, ready_to_execute, executor, done=None):
+        """
+        Runs the "executor" in parallel threads on "instances" when the condition
+        "ready_to_execute" is met for an instance. Handles deadlocking as well.
+        """
+        idle_iterations = 0
+        queued = set(instances)
+        processing = set()
+        done = done or set()
+        threads = {}
+        while queued or processing:
+            # See if we can stop anything new - everything that depends on it must also be stopped
+            for instance in list(queued):
+                if ready_to_execute(instance, done):
+                    threads[instance] = ExceptionalThread(
+                        target=executor,
+                        args=(instance,),
+                        daemon=True,
+                    )
+                    threads[instance].start()
+                    queued.remove(instance)
+                    processing.add(instance)
+                    idle_iterations = 0
+            # See if anything finished stopping
+            for instance in list(processing):
+                if not threads[instance].is_alive():
+                    processing.remove(instance)
+                    done.add(instance)
+                    # Collect exceptions from the thread - if it's an interactive exception, run the rest of it.
+                    try:
+                        threads[instance].maybe_raise()
+                    except DockerInteractiveException as e:
+                        e.handler()
+                        sys.exit(0)
+                    del threads[instance]
+                    idle_iterations = 0
+            # If there's nothing in progress, we've deadlocked
+            if idle_iterations > 10 and queued and not processing:
+                raise DockerRuntimeError(
+                    "Deadlock during stop: Cannot stop any of {}.".format(
+                        ", ".join(i.name for i in queued),
+                    ),
+                )
+            idle_iterations += 1
+            # Don't idle hot
+            time.sleep(0.1)
+
     # Stopping
 
     def stop_containers(self, instances):
@@ -82,40 +133,11 @@ class FormationRunner:
                 if instance in links_to:
                     incoming_links[instance].add(potential_linker)
         # Parallel-stop things
-        to_stop = set(instances)
-        stopping = set()
-        last_stopping = set()
-        stopped = set()
-        stop_threads = {}
-        while to_stop or stopping:
-            # See if we can stop anything new - everything that depends on it must also be stopped
-            for instance in list(to_stop):
-                if all((linker not in to_stop and linker not in stopping) for linker in incoming_links[instance]):
-                    stop_threads[instance] = ExceptionalThread(
-                        target=self.stop_container,
-                        args=(instance,),
-                        daemon=True,
-                    )
-                    stop_threads[instance].start()
-                    to_stop.remove(instance)
-                    stopping.add(instance)
-            # See if anything finished stopping
-            for instance in list(stopping):
-                if not stop_threads[instance].is_alive():
-                    stopping.remove(instance)
-                    stopped.add(instance)
-                    stop_threads[instance].maybe_raise()
-                    del stop_threads[instance]
-            # If there's nothing in progress, we've deadlocked
-            if (stopping == last_stopping) and to_stop and not stopping:
-                raise DockerRuntimeError(
-                    "Deadlock during stop: Cannot stop any of {}".format(
-                        ", ".join(i.name for i in to_stop)
-                    ),
-                )
-            last_stopping = stopping
-            # Don't idle hot
-            time.sleep(0.1)
+        self.parallel_execute(
+            instances,
+            lambda instance, done: all((linker in done) for linker in incoming_links[instance]),
+            executor=self.stop_container,
+        )
 
     def stop_container(self, instance):
         # Wait for the global container manipulation lock
@@ -134,49 +156,13 @@ class FormationRunner:
         """
         Starts all the specified containers in parallel, respecting links
         """
-        # Parallel-start things
         current_formation = self.introspector.introspect()
-        to_start = set(instances)
-        starting = set()
-        idle_iterations = 0
-        started = set(started_instance for started_instance in current_formation)
-        start_threads = {}
-        while to_start or starting:
-            # See if we can start anything new - everything that it depends on must be started
-            for instance in list(to_start):
-                if all((dependency in started) for dependency in instance.links.values()):
-                    start_threads[instance] = ExceptionalThread(
-                        target=self.start_container,
-                        args=(instance,),
-                        daemon=True,
-                    )
-                    start_threads[instance].start()
-                    to_start.remove(instance)
-                    starting.add(instance)
-                    idle_iterations = 0
-            # See if anything finished stopping
-            for instance in list(starting):
-                if not start_threads[instance].is_alive():
-                    starting.remove(instance)
-                    started.add(instance)
-                    # Collect exceptions from the thread - if it's an interactive exception, run the rest of it.
-                    try:
-                        start_threads[instance].maybe_raise()
-                    except DockerInteractiveException as e:
-                        e.handler()
-                        sys.exit(0)
-                    del start_threads[instance]
-                    idle_iterations = 0
-            # If there's nothing in progress, we've deadlocked
-            if idle_iterations > 10 and to_start and not starting:
-                raise DockerRuntimeError(
-                    "Deadlock during start: Cannot start any of {}".format(
-                        ", ".join(i.name for i in to_start)
-                    ),
-                )
-            idle_iterations += 1
-            # Don't idle hot
-            time.sleep(0.1)
+        self.parallel_execute(
+            instances,
+            lambda instance, done: all((dependency in done) for dependency in instance.links.values()),
+            executor=self.start_container,
+            done=set(started_instance for started_instance in current_formation),
+        )
 
     def remove_stopped(self, instance):
         """
@@ -241,18 +227,15 @@ class FormationRunner:
                 volume_mountpoints.append(mount_path)
                 volume_binds[source] = {"bind": mount_path, "mode": "rw"}
 
+            # Add any active devmodes
             for mount_name in instance.devmodes:
-                mount_config = instance.container.devmodes[mount_name]
-                for mount_path, source in mount_config.items():
+                for mount_path, source in instance.container.devmodes[mount_name].items():
                     volume_mountpoints.append(mount_path)
-                    git_match = instance.container.git_volume_pattern.match(source)
-                    if git_match:
-                        source = os.path.abspath("../{}/".format(git_match.group(1)))
-
+                    source = os.path.abspath(source)
                     if os.path.exists(source):
                         volume_binds[source] = {"bind": mount_path, "mode": "rw"}
                     else:
-                        raise NotFoundException("The source path does not exist")
+                        raise NotFoundException("The volume source path {} does not exist".format(source))
 
             # Create container
             container_pointer = self.host.client.create_container(

@@ -16,6 +16,7 @@ class Profile:
     """
     file_path = attr.ib(default=None)
     load_immediately = attr.ib(default=True)
+    default_boot_compatability = attr.ib(default=False)
     parent_profile = attr.ib(default=None, init=False)
     description = attr.ib(default=None, init=False)
     version = attr.ib(default=None, init=False)
@@ -98,7 +99,12 @@ class Profile:
                     for link in self.calculate_links(container)],
                 )
             # Set default boot mode
-            self.graph.set_option(container, "default_boot", True)
+            if details.get('default_boot'):
+                self.graph.set_option(container, "default_boot", True)
+            # TODO: Remove this temporary fix that allows parent profiles default boot based on just
+            # having the container in the profile.
+            if self.default_boot_compatability:
+                self.graph.set_option(container, "default_boot", True)
             # Set devmodes
             self.graph.set_option(container, "devmodes", details["devmodes"])
             # Set ports to apply
