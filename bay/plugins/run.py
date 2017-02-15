@@ -31,9 +31,9 @@ class RunPlugin(BasePlugin):
 @click.command()
 @click.argument("containers", type=ContainerType(), nargs=-1)
 @click.option("--host", "-h", type=HostType(), default="default")
-@click.option("--follow/--nofollow", "-f", default=False)
+@click.option("--tail/--notail", "-t", default=False)
 @click.pass_obj
-def run(app, containers, host, follow):
+def run(app, containers, host, tail):
     """
     Runs containers by name, including any dependencies needed
     """
@@ -51,7 +51,7 @@ def run(app, containers, host, follow):
     task = Task("Starting containers", parent=app.root_task)
     run_formation(app, host, formation, task)
     # If they asked to tail, then run tail
-    if follow:
+    if tail:
         if len(containers) != 1:
             click.echo(RED("You cannot tail more than one container!"))
             sys.exit(1)

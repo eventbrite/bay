@@ -56,6 +56,8 @@ class FormationIntrospector:
         # Find the container name in the graph
         try:
             labels = container_details['Config']['Labels']
+            # Use the bay-specific (not eventbrite-specific, just named uniquely as per the docker label spec) label
+            # to work out what container name this was.
             container = self.graph[labels['com.eventbrite.bay.container']]
         except KeyError:
             raise DockerRuntimeError(

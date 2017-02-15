@@ -208,14 +208,23 @@ class ContainerInstance:
         Resolves any links that are still names to instances from the formation
         """
         for alias, target in list(self.links.items()):
+            # If it's a string, it's come from an introspection process where we couldn't
+            # resolve into an instance at the time (as not all of them were around)
             if isinstance(target, str):
                 try:
                     target = self.formation[target]
                 except KeyError:
+                    # We don't error here as that would prevent you stopping orphaned containers;
+                    # instead, we delete the link and warn the user. The deleted link means `up` will recreate it
+                    # if it's orphaned.
                     del self.links[alias]
                     warnings.warn("Could not resolve link {} to an instance for {}".format(target, self.name))
                 else:
                     self.links[alias] = target
+            elif isinstance(target, ContainerInstance):
+                pass
+            else:
+                raise ValueError("Invalid link value {}".format(repr(target)))
 
     def __eq__(self, other):
         return self.name == other.name
