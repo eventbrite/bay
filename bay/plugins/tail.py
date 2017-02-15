@@ -11,6 +11,8 @@ class TailPlugin(BasePlugin):
     Plugin to let you view container output.
     """
 
+    provides = ["tail"]
+
     def load(self):
         self.add_command(tail)
 
