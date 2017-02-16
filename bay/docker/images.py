@@ -85,7 +85,11 @@ class ImageRepository:
                     image_tag=image_tag
                 )
 
-        task = Task("Pulling remote image {}".format(image_name), parent=parent_task)
+        task = Task(
+            "Pulling remote image {}".format(image_name),
+            parent=parent_task,
+            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
+        )
 
         registry_url = self.get_registry_url(app, task)
         if registry_url is None:
@@ -112,6 +116,7 @@ class ImageRepository:
                 line = line.decode("ascii")
             data = json.loads(line)
             if 'error' in data:
+                task.finish(status="Failed", status_flavor=Task.FLAVOR_WARNING)
                 if fail_silently:
                     return
                 else:
