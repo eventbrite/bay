@@ -26,7 +26,7 @@ class Task:
     FLAVOR_BAD = "bad"
     FLAVOR_WARNING = "warning"
 
-    def __init__(self, name, parent=None, hide_if_empty=False):
+    def __init__(self, name, parent=None, hide_if_empty=False, progress_formatter=None):
         self.name = name
         # If this task only displays if it has children
         self.hide_if_empty = False
@@ -41,6 +41,8 @@ class Task:
         self.status = None
         # The current progress from 0 - 1
         self.progress = None
+        # The way to format the progress numbers
+        self.progress_formatter = progress_formatter or str
         # The current status flavor (turns into a colour)
         self.status_flavor = self.FLAVOR_NEUTRAL
         # Extra lines of information to show underneath the task
@@ -121,8 +123,8 @@ class Task:
         return "[{}{}] {}/{}".format(
             "=" * bar_size,
             " " * (bar_width - bar_size),
-            count,
-            total,
+            self.progress_formatter(count),
+            self.progress_formatter(total),
         )
 
     def output(self, indent=0):
