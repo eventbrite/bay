@@ -51,7 +51,7 @@ def images(ctx, host):
 @images.command()
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.argument("container", type=ContainerType())
-@click.argument("version")
+@click.argument("version", default="latest")
 @click.pass_obj
 def destroy(app, host, container, version):
     """
