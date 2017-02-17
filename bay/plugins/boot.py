@@ -65,8 +65,8 @@ class BootPlugin(BasePlugin):
             raise BadConfigError("Invalid boot container specification: {}".format(e))
         # Check none of them are circular dependencies
         ancestry = self.app.containers.build_ancestry(container) + [container]
-        for boot_container in boot_containers:
-            if boot_container in ancestry:
+        for boot_container, required in boot_containers.items():
+            if boot_container in ancestry and required:
                 raise BadConfigError(
                     "Container {} has a boot container of {}, which is in its own build ancestry".format(
                         container.name,
