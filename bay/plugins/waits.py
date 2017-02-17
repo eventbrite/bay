@@ -2,6 +2,7 @@ import attr
 import http.client
 import socket
 import time
+from docker.errors import NotFound
 
 from .base import BasePlugin
 from ..cli.tasks import Task
@@ -24,6 +25,7 @@ class WaitsPlugin(BasePlugin):
         self.add_catalog_item("wait", "https", HttpsWait)
         self.add_catalog_item("wait", "tcp", TcpWait)
         self.add_catalog_item("wait", "time", TimeWait)
+        self.add_catalog_item("wait", "file", FileWait)
 
     def post_start(self, host, instance, task):
         # Loop through all waits and build instances
@@ -144,8 +146,9 @@ class TimeWait:
     Waits a number of seconds
     """
 
-    # Everything needs instance, alas
+    # Everything needs instance and host, alas
     instance = attr.ib()
+    host = attr.ib()
     seconds = attr.ib()
 
     def __attrs_post_init__(self):
@@ -156,3 +159,27 @@ class TimeWait:
 
     def description(self):
         return "{} seconds".format(self.seconds)
+
+
+@attr.s
+class FileWait:
+    """
+    Waits until a named file appears in the container
+    """
+
+    instance = attr.ib()
+    host = attr.ib()
+    path = attr.ib()
+    waiting_name = attr.ib(default=None)
+
+    def ready(self):
+        # Get the file from the host
+        try:
+            self.host.client.get_archive(self.instance.name, self.path)
+        except NotFound:
+            return False
+        else:
+            return True
+
+    def description(self):
+        return self.waiting_name or "file {}".format(self.path)
