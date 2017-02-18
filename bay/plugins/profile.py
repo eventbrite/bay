@@ -94,12 +94,17 @@ def up(app, host):
     Start up a profile by booting the default containers.
     Leaves any other containers that are running (shell, ssh-agent, etc.) alone.
     """
+    # Do removal loop first so we don't step on adding containers later
     formation = FormationIntrospector(host, app.containers).introspect()
     for container in app.containers:
         if app.containers.options(container).get('default_boot'):
             for instance in list(formation):
                 if instance.container == container:
                     formation.remove_instance(instance)
+
+    # Now add in containers
+    for container in app.containers:
+        if app.containers.options(container).get('default_boot'):
             formation.add_container(container, host)
 
     task = Task("Restarting containers", parent=app.root_task)
