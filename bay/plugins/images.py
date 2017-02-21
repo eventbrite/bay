@@ -19,13 +19,21 @@ class ImagesPlugin(BasePlugin):
     requires = ["gc"]
 
     def load(self):
-        self.add_command(images)
+        self.add_command(image)
 
 
-@click.group(invoke_without_command=True)
+@click.group()
+def image():
+    """
+    Allows operations on images.
+    """
+    pass
+
+
+@image.command()
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.pass_context
-def images(ctx, host):
+def list(ctx, host):
     """
     Lists available images _for containers_
     """
@@ -48,7 +56,7 @@ def images(ctx, host):
                 ])
 
 
-@images.command()
+@image.command()
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.argument("container", type=ContainerType())
 @click.argument("version", default="latest")

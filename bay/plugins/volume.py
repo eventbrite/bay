@@ -14,6 +14,7 @@ class VolumePlugin(BasePlugin):
     Plugin for showing information about volumes and deleting them.
     """
 
+    provides = ["volume"]
     requires = ["gc"]
 
     def load(self):
@@ -31,7 +32,7 @@ def volume():
 @volume.command()
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.pass_obj
-def ls(app, host):
+def list(app, host):
     """
     Lists all available volumes
     """
