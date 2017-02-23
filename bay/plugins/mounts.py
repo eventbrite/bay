@@ -51,8 +51,9 @@ def mounts(app):
 @click.argument('mount', type=MountType())
 @click.argument('container', default='all', type=ContainerType(all=True))
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.option('--up/--no-up', '-u', default=True)
 @click.pass_obj
-def mount(app, mount, container, host):
+def mount(app, mount, container, host, up):
     """
     Mount a dev checkout in a given container.
     """
@@ -62,16 +63,19 @@ def mount(app, mount, container, host):
         return
     # Add the devmode
     mutate_devmounts(app, container, add=[mount])
-    # Run tug up to apply any changes
-    app.invoke("up")
+
+    if up:
+        # Run tug up to apply any changes
+        app.invoke("up")
 
 
 @click.command()
 @click.argument('mount', type=MountType())
 @click.argument('container', default='all', type=ContainerType(all=True))
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.option('--up/--no-up', '-u', default=True)
 @click.pass_obj
-def unmount(app, mount, container, host):
+def unmount(app, mount, container, host, up):
     """
     Unmount a dev checkoutin a given container.
     """
@@ -81,8 +85,10 @@ def unmount(app, mount, container, host):
         return
     # Remove the devmode
     mutate_devmounts(app, container, remove=[mount])
-    # Run tug up to apply any changes
-    app.invoke("up")
+
+    if up:
+        # Run tug up to apply any changes
+        app.invoke("up")
 
 
 def mutate_devmounts(app, containers, add=None, remove=None):
