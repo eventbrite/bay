@@ -123,7 +123,7 @@ class ContainerFormation:
         return iter(self.container_instances.values())
 
 
-@attr.s(cmp=False, hash=False)
+@attr.s(hash=False)
 class ContainerInstance:
     """
     Represents a single container as part of an overall ContainerFormation
@@ -140,16 +140,16 @@ class ContainerInstance:
     :foreground: If True, the container is launched in the foreground and a TTY attached
     """
 
-    name = attr.ib()
-    container = attr.ib()
-    image_id = attr.ib()
-    links = attr.ib(default=attr.Factory(dict), repr=False)
-    devmodes = attr.ib(default=attr.Factory(set), repr=False)
-    ports = attr.ib(default=attr.Factory(dict), repr=False)
-    environment = attr.ib(default=attr.Factory(dict), repr=False)
-    command = attr.ib(default=None, repr=False)
-    foreground = attr.ib(default=None, repr=False)
-    formation = attr.ib(default=None, init=False, repr=False)
+    name = attr.ib(cmp=True)
+    container = attr.ib(cmp=False)
+    image_id = attr.ib(cmp=False)
+    links = attr.ib(default=attr.Factory(dict), repr=False, cmp=False)
+    devmodes = attr.ib(default=attr.Factory(set), repr=False, cmp=False)
+    ports = attr.ib(default=attr.Factory(dict), repr=False, cmp=False)
+    environment = attr.ib(default=attr.Factory(dict), repr=False, cmp=False)
+    command = attr.ib(default=None, repr=False, cmp=False)
+    foreground = attr.ib(default=None, repr=False, cmp=False)
+    formation = attr.ib(default=None, init=False, repr=False, cmp=False)
 
     def __attrs_post_init__(self):
         self.ports.update(dict(self.container.ports.items()))
