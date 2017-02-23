@@ -53,7 +53,7 @@ def mounts(app):
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.option('--up/--no-up', '-u', default=True)
 @click.pass_obj
-def mount(app, mount, container, host):
+def mount(app, mount, container, host, user_profile):
     """
     Mount a dev checkout in a given container.
     """
@@ -75,7 +75,7 @@ def mount(app, mount, container, host):
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.option('--up/--no-up', '-u', default=True)
 @click.pass_obj
-def unmount(app, mount, container, host):
+def unmount(app, mount, container, host, up):
     """
     Unmount a dev checkoutin a given container.
     """
