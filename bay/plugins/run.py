@@ -94,7 +94,9 @@ def stop(app, containers, host):
     for instance in list(formation):
         # If there are no names, then we remove everything
         if instance.container in containers or not containers:
-            formation.remove_instance(instance)
+            # Make sure that it was not removed already as a dependent
+            if instance.formation:
+                formation.remove_instance(instance)
     # Run the change
     task = Task("Stopping containers", parent=app.root_task)
     run_formation(app, host, formation, task)
