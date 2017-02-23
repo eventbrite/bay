@@ -73,6 +73,9 @@ class ImageRepository:
         docker registry.
         """
 
+        assert isinstance(image_name, str)
+        assert isinstance(image_tag, str)
+
         # The string "local" has a special meaning which means the most recent
         # local image of that name, so we skip the remote call/check.
         if image_tag == "local":
