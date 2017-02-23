@@ -55,7 +55,7 @@ class ContainerFormation:
         # Resolve the dependent containers so they can all be removed
         dependent_descendency = set(dependency_sort([instance.container], self.graph.dependents)[:-1])
         for other_instance in list(self):
-            if other_instance.container in dependent_descendency:
+            if other_instance.container in dependent_descendency and other_instance.formation:
                 other_instance.formation = None
                 del self.container_instances[other_instance.name]
         # Remove the requested container
