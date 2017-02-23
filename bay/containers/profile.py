@@ -1,4 +1,5 @@
 import os
+import warnings
 import yaml
 
 import attr
@@ -90,7 +91,11 @@ class Profile:
         """
         self.graph = graph
         for name, details in self.containers.items():
-            container = self.graph[name]
+            try:
+                container = self.graph[name]
+            except KeyError:
+                warnings.warn("Cannot apply profile for nonexistent container {}".format(name))
+                continue
             # Apply container links
             if details.get('ignore_links') or details.get('extra_links'):
                 self.graph.set_dependencies(
