@@ -153,7 +153,11 @@ class FormationRunner:
             if not self.host.container_running(instance.name, ignore_exists=True):
                 return
             # Stop the container
-            stop_task = Task("Stopping {}".format(instance.container.name), parent=self.task)
+            stop_task = Task(
+                "Stopping {}".format(instance.container.name),
+                parent=self.task,
+                collapse_if_finished=True,
+            )
             self.host.client.stop(instance.name)
             stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
@@ -192,7 +196,11 @@ class FormationRunner:
             if self.host.container_running(instance.name, ignore_exists=True):
                 return
 
-            start_task = Task("Starting {}".format(instance.container.name), parent=self.task)
+            start_task = Task(
+                "Starting {}".format(instance.container.name),
+                parent=self.task,
+                collapse_if_finished=True,
+            )
 
             self.remove_stopped(instance)
 

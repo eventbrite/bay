@@ -26,8 +26,8 @@ class TaskExtraInfoHandler(logging.Handler):
 
     def emit(self, record):
         text = self.format(record)
-        # Sanitise the text
-        text = remove_ansi(text).replace("\n", "").replace("\r", "").strip()
+        # Sanitise the text and make it short-ish
+        text = remove_ansi(text).replace("\n", "").replace("\r", "").strip()[:80]
         self.task.set_extra_info(
             self.task.extra_info[-3:] + [text]
         )
