@@ -17,13 +17,14 @@ class LegacyEnvPlugin(BasePlugin):
         for alias, target in instance.links.items():
             # Ask Docker for all open ports
             ports = host.client.inspect_container(target.name)['NetworkSettings']['Ports']
-            for port, _ in ports.items():
-                number, protocol = port.split("/")
-                name = "{}_1_PORT_{}_{}".format(
-                    alias.replace("-", "_").upper(),
-                    number,
-                    protocol.upper(),
-                )
-                instance.environment[name] = "{}://{}:{}".format(protocol, alias, number)
-                instance.environment[name + "_ADDR"] = alias
-                instance.environment[name + "_PORT"] = number
+            if ports:
+                for port, _ in ports.items():
+                    number, protocol = port.split("/")
+                    name = "{}_1_PORT_{}_{}".format(
+                        alias.replace("-", "_").upper(),
+                        number,
+                        protocol.upper(),
+                    )
+                    instance.environment[name] = "{}://{}:{}".format(protocol, alias, number)
+                    instance.environment[name + "_ADDR"] = alias
+                    instance.environment[name + "_PORT"] = number
