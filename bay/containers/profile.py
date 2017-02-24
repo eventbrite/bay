@@ -114,10 +114,11 @@ class Profile:
             self.graph.set_option(container, "devmodes", details["devmodes"])
             # Set ports to apply
             if "ports" in details:
-                container.ports = {
-                    int(a): int(b)
-                    for a, b in details["ports"].items()
-                }
+                for a, b in details["ports"].items():
+                    try:
+                        container.ports[int(a)] = int(b)
+                    except TypeError:
+                        raise BadConfigError('Profile contains invalid ports for {}: {}'.format(a, b))
             # Apply any image tag override
             if "image_tag" in details:
                 container.image_tag = details['image_tag']
