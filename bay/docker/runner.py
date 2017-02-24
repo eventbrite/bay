@@ -1,8 +1,9 @@
-import os
-import threading
-import sys
-import time
 import dockerpty
+import functools
+import os
+import sys
+import threading
+import time
 
 from docker.errors import NotFound
 
@@ -11,6 +12,7 @@ from .towline import Towline
 from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError, DockerInteractiveException, NotFoundException
+from ..utils.sorting import dependency_sort
 from ..utils.threading import ExceptionalThread, ThreadSet
 
 
@@ -123,19 +125,24 @@ class FormationRunner:
         """
         Stops all the specified containers in parallel, still respecting links
         """
-        # Work out what containers are linked to the ones we wish to stop
-        incoming_links = {}
         current_formation = self.introspector.introspect()
-        for instance in instances:
-            incoming_links[instance] = set()
+
+        # Inner function that we can pass to dependency_sort
+        @functools.lru_cache(maxsize=512)
+        def get_incoming_links(instance):
+            result = set()
             for potential_linker in current_formation:
                 links_to = potential_linker.links.values()
                 if instance in links_to:
-                    incoming_links[instance].add(potential_linker)
+                    result.add(potential_linker)
+            return result
+
+        # Resolve container list to include descendency
+        instances = dependency_sort(instances, get_incoming_links)
         # Parallel-stop things
         self.parallel_execute(
             instances,
-            lambda instance, done: all((linker in done) for linker in incoming_links[instance]),
+            lambda instance, done: all((linker in done) for linker in get_incoming_links(instance)),
             executor=self.stop_container,
         )
 
