@@ -44,6 +44,7 @@ class WaitsPlugin(BasePlugin):
             params["host"] = host
             wait_instance = wait_class(**params)
             wait_instance.task = Task("Waiting for {}".format(wait_instance.description()), parent=task)
+            wait_instance.task.update(status="Waiting")
             wait_instances.append(wait_instance)
 
         # Check on them all until they finish
@@ -55,7 +56,6 @@ class WaitsPlugin(BasePlugin):
                     "Container {} died while waiting for boot completion".format(instance.container.name)
                 )
             # Check the waits
-            task.update(status="Waiting")
             for wait_instance in list(wait_instances):
                 if wait_instance.ready():
                     wait_instance.task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)

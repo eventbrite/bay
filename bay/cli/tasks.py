@@ -9,7 +9,6 @@ from ..utils.threading import ExceptionalThread
 
 UP_ONE = "\033[A\033[1000D"
 CLEAR_LINE = "\033[2K"
-INDENT_CHARS = "  "
 
 console_lock = threading.Lock()
 
@@ -21,15 +20,19 @@ class Task:
     that should be shown to the user alongside progress messages or a progress bar.
     """
 
+    INDENT_AMOUNT = 2
+
     FLAVOR_NEUTRAL = "neutral"
     FLAVOR_GOOD = "good"
     FLAVOR_BAD = "bad"
     FLAVOR_WARNING = "warning"
 
-    def __init__(self, name, parent=None, hide_if_empty=False, progress_formatter=None):
+    def __init__(self, name, parent=None, hide_if_empty=False, collapse_if_finished=False, progress_formatter=None):
         self.name = name
         # If this task only displays if it has children
-        self.hide_if_empty = False
+        self.hide_if_empty = hide_if_empty
+        # If this task collapses to just the first line if it's finished
+        self.collapse_if_finished = collapse_if_finished
         # Any parent tasks to trigger updates in
         self.parent = parent
         with console_lock:
@@ -105,13 +108,17 @@ class Task:
         self.update(**kwargs)
         self.finished = True
 
-    def lines(self):
+    def wrapped_extra_info(self, text_width):
         """
-        Returns the number of console lines this task will need to print itself.
+        Returns extra_info wrapped to fit the terminal width.
         """
-        if self.hide_if_empty and not self.subtasks:
-            return 0
-        return 1 + sum(subtask.lines() for subtask in self.subtasks) + len(self.extra_info)
+        actual_output = []
+        for line in self.extra_info:
+            line = line.strip()
+            while line:
+                actual_output.append(line[:text_width])
+                line = line[text_width:]
+        return actual_output
 
     def make_progress_bar(self, count, total, width=30):
         """
@@ -127,16 +134,12 @@ class Task:
             self.progress_formatter(total),
         )
 
-    def output(self, indent=0):
+    def output(self, terminal_width, indent=0):
         """
-        Prints the task out to the console along with its subtasks.
-        Assumes that the screen is already cleared and the cursor is in the right
-        place.
+        Returns the lines to output for this task to the screen (as a generator)
         """
         if self.hide_if_empty and not self.subtasks:
             return
-        # Get terminal width
-        terminal_width = shutil.get_terminal_size((80, 20)).columns
         # Work out progress text
         progress_string = ""
         if self.progress is not None:
@@ -150,20 +153,21 @@ class Task:
         elif self.status_flavor == self.FLAVOR_WARNING:
             status_string = YELLOW(status_string)
         # Print out our line
-        indent_string = indent * INDENT_CHARS
-        print("{}{}: {}{}".format(
+        indent_string = " " * (self.INDENT_AMOUNT * indent)
+        yield "{}{}: {}{}".format(
             indent_string,
             CYAN(self.name),
             progress_string,
             status_string,
-        ), flush=True)
-        # Print out extra info
-        indent_string = (indent + 1) * INDENT_CHARS
-        for info in self.extra_info:
-            print(indent_string + info[:terminal_width - (len(indent_string) + 1)].replace("\n", ""), flush=True)
-        # Print out subtasks
-        for subtask in self.subtasks:
-            subtask.output(indent=indent + 1)
+        )
+        if not (self.finished and self.collapse_if_finished):
+            # Print out extra info
+            indent_string = (indent + 1) * (" " * self.INDENT_AMOUNT)
+            for info in self.wrapped_extra_info(terminal_width - len(indent_string)):
+                yield indent_string + info[:terminal_width - len(indent_string)].replace("\n", "")
+            # Print out subtasks
+            for subtask in self.subtasks:
+                yield from subtask.output(terminal_width, indent=indent + 1)
 
     def clear_and_output(self):
         """
@@ -175,9 +179,12 @@ class Task:
             return
         # OK, print
         with console_lock:
-            self.last_output_time = time.time()
+            # Get terminal width
+            terminal_width = shutil.get_terminal_size((80, 20)).columns
+            # Get the output we need to print
+            output = list(self.output(terminal_width))
             # Scroll the terminal down/up enough for any new lines
-            needed_lines = self.lines()
+            needed_lines = len(output)
             new_lines = needed_lines - self.cleared_lines
             if new_lines > 0:
                 print("\n" * new_lines, flush=True, end="")
@@ -194,7 +201,8 @@ class Task:
                 flush=True,
                 end="",
             )
-            self.output()
+            for line in output:
+                print(line)
 
     def _pause_output(self, pause=True):
         """
@@ -269,10 +277,6 @@ class RootTask(Task):
     def __init__(self):
         super(RootTask, self).__init__("__root__")
 
-    def lines(self):
-        # We don't have our own line to output
-        return super(RootTask, self).lines() - 1
-
-    def output(self):
+    def output(self, terminal_width):
         for subtask in self.subtasks:
-            subtask.output(indent=0)
+            yield from subtask.output(terminal_width, indent=0)
