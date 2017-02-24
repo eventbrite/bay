@@ -62,7 +62,11 @@ class Builder:
         self.logger.addHandler(file_handler)
 
         # Optionally add task (console) log handler
-        self.task = Task("Building {}".format(CYAN(self.container.name)), parent=self.parent_task)
+        self.task = Task(
+            "Building {}".format(CYAN(self.container.name)),
+            parent=self.parent_task,
+            collapse_if_finished=True,
+        )
         if self.verbose:
             self.logger.addHandler(TaskExtraInfoHandler(self.task))
 
@@ -141,8 +145,7 @@ class Builder:
             )
             self.logger.info(build_completion_message)
 
-            # Clear any verbose log peeking and close out the task
-            self.task.set_extra_info([])
+            # Close out the task
             self.task.finish(status='Done [{}]'.format(time_delta_str), status_flavor=Task.FLAVOR_GOOD)
 
     def make_build_context(self):
