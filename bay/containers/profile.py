@@ -122,6 +122,9 @@ class Profile:
             # Apply any image tag override
             if "image_tag" in details:
                 container.image_tag = details['image_tag']
+            # Store environment variables
+            for key, value in details['environment'].items():
+                container.environment[key] = value
 
     def calculate_links(self, container):
         """
