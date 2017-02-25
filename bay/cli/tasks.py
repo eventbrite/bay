@@ -59,12 +59,12 @@ class Task:
         # Run update
         self.update()
 
-    def update(self, status=None, status_flavor=None, progress=None):
+    def update(self, status=None, status_flavor=None, progress=None, force=False):
         """
         Update either the status message, the progress bar, or both.
         If this is the topmost task, this will trigger a reprint on the console.
         """
-        if self.finished:
+        if self.finished and not force:
             raise ValueError("You cannot update() a finished task!")
         with console_lock:
             if status is not None:
@@ -105,8 +105,8 @@ class Task:
         Marks the task as finished, meaning it can no longer be mutated.
         Used to optimise terminal output only.
         """
-        self.update(**kwargs)
         self.finished = True
+        self.update(force=True, **kwargs)
 
     def wrapped_extra_info(self, text_width):
         """
