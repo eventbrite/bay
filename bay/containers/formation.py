@@ -93,6 +93,8 @@ class ContainerFormation:
             image_id=image_id,
             links=links,
             devmodes=devmodes,
+            foreground=container.foreground,
+            environment=container.environment,
         )
         self.add_instance(instance)
         return instance
