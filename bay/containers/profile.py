@@ -106,9 +106,10 @@ class Profile:
             # Set default boot mode
             if details.get('default_boot'):
                 self.graph.set_option(container, "default_boot", True)
-            # TODO: Remove this temporary fix that allows parent profiles default boot based on just
-            # having the container in the profile.
-            if self.default_boot_compatability:
+            # TODO: Remove this temporary fix that allows parent profiles
+            # default boot based on just having the container in the profile
+            # (provided it is not a foreground container)
+            if not container.foreground and self.default_boot_compatability:
                 self.graph.set_option(container, "default_boot", True)
             # Set devmodes
             self.graph.set_option(container, "devmodes", details["devmodes"])
