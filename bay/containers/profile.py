@@ -123,7 +123,7 @@ class Profile:
             if "image_tag" in details:
                 container.image_tag = details['image_tag']
             # Store environment variables
-            for key, value in details['environment'].items():
+            for key, value in details.get('environment', {}).items():
                 container.environment[key] = value
 
     def calculate_links(self, container):
