@@ -61,8 +61,9 @@ def run(app, containers, host, tail):
 @click.command()
 @click.argument("container", type=ContainerType())
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.argument("command", nargs=-1, default=None)
 @click.pass_obj
-def shell(app, container, host):
+def shell(app, container, host, command):
     """
     Runs a single container with foreground enabled and overridden to use bash.
     """
@@ -75,7 +76,10 @@ def shell(app, container, host):
         click.echo(RED(str(e)))
         sys.exit(1)
     instance.foreground = True
-    instance.command = ["/bin/bash"]
+    if command:
+        instance.command = ['/bin/bash -lc "{}"'.format(' '.join(command))]
+    else:
+        instance.command = ["/bin/bash -l"]
     # Run that change
     task = Task("Shelling into {}".format(container.name), parent=app.root_task)
     run_formation(app, host, formation, task)
