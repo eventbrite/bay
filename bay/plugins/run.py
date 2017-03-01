@@ -1,6 +1,5 @@
 import attr
 import click
-import subprocess
 import sys
 
 from .base import BasePlugin
