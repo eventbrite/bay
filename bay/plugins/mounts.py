@@ -42,8 +42,8 @@ def mounts(app):
     for name, devmodes in dev_mounts.items():
         click.echo('{}: \nMounted: {}\nUnmounted: {}'.format(
             CYAN(name),
-            GREEN(', '.join(devmodes['mounted'])),
-            PURPLE(', '.join(devmodes['unmounted'])),
+            GREEN(', '.join(sorted(devmodes['mounted']))),
+            PURPLE(', '.join(sorted(devmodes['unmounted']))),
         ))
 
 
