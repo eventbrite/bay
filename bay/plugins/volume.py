@@ -48,7 +48,7 @@ def list(app, host):
         for _, source in container.named_volumes.items():
             users.setdefault(source, set()).add(container.name)
     # Print volumes
-    for details in sorted(host.client.volumes()['Volumes'], key=lambda x: x['Name']):
+    for details in sorted((host.client.volumes()['Volumes'] or []), key=lambda x: x['Name']):
         table.print_row([
             details['Name'],
             ", ".join(users.get(details['Name'], [])),
