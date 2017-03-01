@@ -17,7 +17,7 @@ class Container:
     even if the actual running server is remote.
     """
     parent_pattern = re.compile(r'^FROM\s+([\S/]+)', re.IGNORECASE | re.MULTILINE)
-    git_volume_pattern = re.compile(r'^\{git@github.com:eventbrite/([\w\s]+).git\}(.*)$')
+    git_volume_pattern = re.compile(r'^\{git@github.com:eventbrite/([\w\s\-]+).git\}(.*)$')
 
     graph = attr.ib(repr=False, hash=False, cmp=False)
     path = attr.ib(repr=False, hash=True, cmp=True)
