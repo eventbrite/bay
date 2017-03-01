@@ -23,12 +23,17 @@ class AttachPlugin(BasePlugin):
 @click.command()
 @click.argument("container", type=ContainerType())
 @click.option("--host", "-h", type=HostType(), default="default")
-@click.option("--shell", default="/bin/bash")
+@click.argument("command", nargs=-1, default=None)
 @click.pass_obj
-def attach(app, container, host, shell):
+def attach(app, container, host, command):
     """
     Attaches to a container
     """
+    if command:
+        shell = ['/bin/bash', '-lc', ' '.join(command)]
+    else:
+        shell = ['/bin/bash']
+
     # See if the container is running
     formation = FormationIntrospector(host, app.containers).introspect()
     for instance in formation:
@@ -38,7 +43,7 @@ def attach(app, container, host, shell):
             if os.environ.get("TERM", None):
                 pre_args = ["env", "TERM=%s" % os.environ['TERM']]
             # Launch into an attached shell
-            status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + [shell])
+            status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + shell)
             sys.exit(status_code)
     # It's not running ;(
     click.echo(RED("Container {} is not running. It must be started to attach.".format(container.name)))
