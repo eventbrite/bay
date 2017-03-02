@@ -109,13 +109,16 @@ def stop(app, containers, host):
 @click.command()
 @click.argument("containers", type=ContainerType(), nargs=-1)
 @click.option("--host", "-h", type=HostType(), default="default")
-@click.pass_context
-def restart(ctx, containers, host):
+@click.pass_obj
+def restart(app, containers, host):
     """
     Stops and then starts containers.
     """
-    ctx.invoke(stop, containers=containers, host=host)
-    ctx.invoke(run, containers=containers, host=host)
+    app.invoke("stop", containers=containers, host=host)
+    if containers:
+        app.invoke("run", containers=containers, host=host)
+    else:
+        app.invoke("up", host=host)
 
 
 def run_formation(app, host, formation, task):
