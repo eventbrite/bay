@@ -52,7 +52,7 @@ def build(app, containers, host, cache, recursive, verbose):
     for container in containers:
         if container is ContainerType.Profile:
             for con in app.containers:
-                if app.containers.options(con).get('default_boot'):
+                if app.containers.options(con).get('in_profile'):
                     containers_to_pull.append(con)
         else:
             containers_to_build.append(container)

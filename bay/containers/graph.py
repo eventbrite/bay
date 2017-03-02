@@ -103,7 +103,7 @@ class ContainerGraph:
         Sets the option named `option` on the container to the given value.
         Also does some basic checks of what valid options are.
         """
-        if option == "default_boot":
+        if option in ("default_boot", "in_profile"):
             value = bool(value)
         elif option == "devmodes":
             if not isinstance(value, set):
