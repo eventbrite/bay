@@ -27,11 +27,14 @@ def ps(app, host):
     # Run the introspector to get the details
     formation = FormationIntrospector(host, app.containers).introspect()
     # Print formation details
-    table = Table([("NAME", 30), ("DOCKER NAME", 30), ("IMAGE", 30)])
+    table = Table([("NAME", 30), ("DOCKER NAME", 30), ("PORTS", 30)])
     table.print_header()
     for instance in sorted(formation, key=lambda i: i.name):
         table.print_row([
             instance.container.name,
             instance.name,
-            instance.image_id,
+            ", ".join(
+                "{}->{}".format(private, public)
+                for private, public in instance.port_mapping.items()
+            ),
         ])
