@@ -103,6 +103,8 @@ class Profile:
                     [self.graph[link]
                     for link in self.calculate_links(container)],
                 )
+            # Set flag saying it's specified in a profile (for bay build profile)
+            self.graph.set_option(container, "in_profile", True)
             # Set default boot mode
             if details.get('default_boot'):
                 self.graph.set_option(container, "default_boot", True)
