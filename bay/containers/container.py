@@ -145,6 +145,7 @@ class Container:
         self.foreground = config_data.get("foreground", False)
         self.image_tag = config_data.get("image_tag", "local")
         self.environment = config_data.get("environment", {})
+        self.fast_kill = config_data.get("fast_kill", False)
         self.buildargs = {}
         # Store all extra data so plugins can get to it
         self.extra_data = {

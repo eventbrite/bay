@@ -158,7 +158,10 @@ class FormationRunner:
                 parent=self.task,
                 collapse_if_finished=True,
             )
-            self.host.client.stop(instance.name)
+            self.host.client.stop(
+                instance.name,
+                timeout=0 if instance.container.fast_kill else 10,
+            )
             stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
     # Starting
