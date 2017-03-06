@@ -27,7 +27,7 @@ def ps(app, host):
     # Run the introspector to get the details
     formation = FormationIntrospector(host, app.containers).introspect()
     # Print formation details
-    table = Table([("NAME", 30), ("DOCKER NAME", 30), ("PORTS", 30)])
+    table = Table([("NAME", 30), ("DOCKER NAME", 40), ("PORTS (CONTAINER->HOST)", 30)])
     table.print_header()
     for instance in sorted(formation, key=lambda i: i.name):
         table.print_row([
