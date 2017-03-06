@@ -98,7 +98,8 @@ class FormationIntrospector:
         instance.ip_address = container_details['NetworkSettings']['Networks'][self.network]['IPAddress']
         instance.port_mapping = {}
         for container_port, host_details in container_details['NetworkSettings'].get('Ports', {}).items():
-            private_port = int(container_port.split("/", 1)[0])
-            public_port = int(host_details[0]['HostPort'])
-            instance.port_mapping[private_port] = public_port
+            if host_details:
+                private_port = int(container_port.split("/", 1)[0])
+                public_port = int(host_details[0]['HostPort'])
+                instance.port_mapping[private_port] = public_port
         return instance
