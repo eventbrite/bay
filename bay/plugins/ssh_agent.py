@@ -113,11 +113,11 @@ class SSHAgentPlugin(BasePlugin):
         Returns a key, optionally prompting for passphrase.
         """
         # Read key
-        with self.app.root_task.paused_output():
-            with open(path, "rb") as fh:
-                key_contents = fh.read()
-            # If it's encrypted, then decrypt it
-            if b"ENCRYPTED" in key_contents:
+        with open(path, "rb") as fh:
+            key_contents = fh.read()
+        # If it's encrypted, then decrypt it
+        if b"ENCRYPTED" in key_contents:
+            with self.app.root_task.paused_output():
                 print("Decrypting key %s" % path)
                 rsa_proc = subprocess.Popen(
                     ["openssl", "rsa"],
