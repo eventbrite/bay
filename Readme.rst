@@ -3,7 +3,7 @@ Bay
 ===
 
 .. image:: https://img.shields.io/pypi/v/Bay.svg
-    :target: https://pypi.python.org/pypi/Tubes/
+    :target: https://pypi.python.org/pypi/bay/
     :alt: Latest Version
 
 .. image:: https://travis-ci.org/eventbrite/bay.svg?branch=master
