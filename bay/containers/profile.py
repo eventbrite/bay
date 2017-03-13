@@ -103,7 +103,8 @@ class Profile:
                     [self.graph[link]
                     for link in self.calculate_links(container)],
                 )
-            # Set flag saying it's specified in a profile (for bay build profile) - not set for the user profile for now
+            # Set flag saying it's specified in a profile (for bay build
+            # profile) - not set for the user profile for now
             # TODO: remove user profile restriction with default boot compat stuff
             if self.default_boot_compatability:
                 self.graph.set_option(container, "in_profile", True)
