@@ -2,6 +2,13 @@
 Bay
 ===
 
+.. image:: https://img.shields.io/pypi/v/Bay.svg
+    :target: https://pypi.python.org/pypi/Tubes/
+    :alt: Latest Version
+
+.. image:: https://travis-ci.org/eventbrite/bay.svg?branch=master
+    :target: https://travis-ci.org/eventbrite/bay
+
 Bay is a tool for assisting creation and management of Docker_
 containers for development use.  It allows you to supplement a ``Dockerfile``
 with additional information on how to run and link containers together.
