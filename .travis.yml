@@ -1,0 +1,14 @@
+language: python
+sudo: false
+
+python:
+    - '3.4'
+    - '3.5'
+    - '3.6'
+    - 'pypy'
+
+install:
+    - pip install coveralls
+
+after_success:
+    - coveralls
