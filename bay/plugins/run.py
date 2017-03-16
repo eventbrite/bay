@@ -45,8 +45,23 @@ def run(app, containers, host, tail):
         try:
             formation.add_container(container, host)
         except ImageNotFoundException as e:
-            click.echo(RED(str(e)))
-            sys.exit(1)
+            # If it's the container we're trying to add directly, have one error -
+            # otherwise, say it's a link
+            if e.image == container.image_name:
+                click.echo(RED(
+                    "This container ({name}) does not have a built image. Try `bay build {name}` first.".format(
+                        name=container.name,
+                    )
+                ))
+                sys.exit(1)
+            elif hasattr(e, "container"):
+                click.echo(RED("No image for linked container {name} - try `bay build {name}` first.".format(
+                    name=e.container.name,
+                )))
+                sys.exit(1)
+            else:
+                click.echo(RED("No image for linked container %s!" % e.image))
+                sys.exit(1)
     # Run that change
     task = Task("Starting containers", parent=app.root_task)
     run_formation(app, host, formation, task)

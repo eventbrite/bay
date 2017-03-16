@@ -1,7 +1,7 @@
 import attr
 import warnings
 
-from ..exceptions import BadConfigError
+from ..exceptions import BadConfigError, ImageNotFoundException
 from ..utils.sorting import dependency_sort
 
 
@@ -81,7 +81,12 @@ class ContainerFormation:
                     break
             else:
                 # OK, we need to make one
-                instance = self.add_container(dependency, host)
+                try:
+                    instance = self.add_container(dependency, host)
+                except ImageNotFoundException as e:
+                    # Annotate the error with the container
+                    e.container = dependency
+                    raise
             if dependency in direct_dependencies:
                 links[dependency.name] = instance
         # Look up the image hash to use in the repo
