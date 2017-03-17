@@ -46,4 +46,6 @@ def attach(app, container, host, command):
             status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + shell)
             sys.exit(status_code)
     # It's not running ;(
-    click.echo(RED("Container {} is not running. It must be started to attach.".format(container.name)))
+    click.echo(RED("Container {name} is not running. It must be started to attach - try `bay run {name}`.".format(
+        name=container.name,
+    )))
