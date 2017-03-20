@@ -26,6 +26,8 @@ setup(
         'spell': ['pylev'],
     },
     test_suite="tests",
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     entry_points='''
         [console_scripts]
         bay = bay.cli:cli

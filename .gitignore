@@ -13,3 +13,5 @@ build
 .coverage
 .idea
 .DS_Store
+.cache
+.eggs
