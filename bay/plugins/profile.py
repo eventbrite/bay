@@ -153,5 +153,7 @@ def list_profiles(app, verbose):
                     click.echo(profile_name)
 
     if corrupted_profiles:
-        click.echo("These profiles are defined but corrupted and cannot be loaded:")
+        click.echo(
+            "These profiles are defined but corrupted and cannot be loaded:"
+        )
         click.echo(corrupted_profiles)
