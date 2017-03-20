@@ -7,6 +7,7 @@ from .base import BasePlugin
 from .run import run_formation
 from ..cli.argument_types import HostType
 from ..cli.colors import CYAN, RED
+from ..cli.table import Table
 from ..cli.tasks import Task
 from ..containers.profile import Profile
 from ..docker.introspect import FormationIntrospector
@@ -23,6 +24,7 @@ class ProfilesPlugin(BasePlugin):
     def load(self):
         self.add_command(profile)
         self.add_command(up)
+        self.add_command(list_profiles)
 
 
 @click.command()
@@ -109,3 +111,47 @@ def up(app, host):
 
     task = Task("Restarting containers", parent=app.root_task)
     run_formation(app, host, formation, task)
+
+
+@click.command()
+@click.option('--verbose/--quiet', '-v/-q', default=False)
+@click.pass_obj
+def list_profiles(app, verbose):
+    """
+    List all available profiles.
+    """
+    # the path where all profiles can be found
+    profiles_home_dir = os.path.join(
+        app.config['bay']['home'],
+        "profiles",
+    )
+    corrupted_profiles = []
+    if verbose:
+        table = Table([
+            ("PROFILE", 30),
+            ("DESCRIPTION", 50),
+        ])
+        table.print_header()
+
+    for filename in os.listdir(profiles_home_dir):
+        if filename.endswith('.yaml'):
+            profile_name = filename.split('.')[0]
+            try:
+                profile = Profile(os.path.join(profiles_home_dir, filename))
+            except:
+                # the profile is corrupted, the specifics of the error do not
+                # matter in this case, where we are only trying to list
+                # available profiles.
+                corrupted_profiles.append(profile_name)
+            else:
+                if verbose:
+                    table.print_row([
+                        profile_name,
+                        profile.description
+                    ])
+                else:
+                    click.echo(profile_name)
+
+    if corrupted_profiles:
+        click.echo("These profiles are defined but corrupted and cannot be loaded:")
+        click.echo(corrupted_profiles)
