@@ -4,6 +4,8 @@ from bay import __version__
 setup(
     name='bay',
     version=__version__,
+    author='Eventbrite, Inc.',
+    description='Docker-based development workflow tooling',
     packages=[
         "bay",
         "bay.cli",
