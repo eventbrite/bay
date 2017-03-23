@@ -98,11 +98,11 @@ def up(app, host):
     """
     # Do removal loop first so we don't step on adding containers later
     formation = FormationIntrospector(host, app.containers).introspect()
-    for container in app.containers:
-        if app.containers.options(container).get('default_boot'):
-            for instance in list(formation):
-                if instance.container == container:
-                    formation.remove_instance(instance)
+    for instance in list(formation):
+        # We remove all non-system containers, so that means ssh-agent and similar
+        # containers will survive the process.
+        if not instance.container.system and instance.formation:
+            formation.remove_instance(instance)
 
     # Now add in containers
     for container in app.containers:
