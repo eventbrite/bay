@@ -6,6 +6,12 @@ setup(
     version=__version__,
     author='Eventbrite, Inc.',
     description='Docker-based development workflow tooling',
+    long_description=(
+        'Bay is a tool for assisting creation and management of Docker ' +
+        'containers for development use.  It allows you to supplement a '+
+        'Dockerfile with additional information on how to run and link ' +
+        'containers together. \n\nFor more, see http://github.com/eventbrite/bay/'
+    ),
     packages=[
         "bay",
         "bay.cli",
