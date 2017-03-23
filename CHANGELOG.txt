@@ -1,4 +1,10 @@
+2.0.1 (2017-03-23)
+------------------
+
+- Make "up" ignore "system" containers, rather than "non-default-boot"
+
+
 2.0.0 (2017-03-21)
 ------------------
 
-Initial release.
+- Initial release.
