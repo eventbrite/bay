@@ -141,11 +141,22 @@ class Container:
                 self._devmodes[name][mount_point] = os.path.abspath(os.path.join(self.graph.path, source))
         # Ports is a dict of {port on container: host exposed port}
         self.ports = config_data.get("ports", {})
+        # A list of checks to run before allowing a build (often for network connectivity)
         self.build_checks = config_data.get("build_checks", [])
+        # If the container should launch into a foreground shell with its CMD when run, rather than
+        # starting up in the background. Useful for test suites etc.
         self.foreground = config_data.get("foreground", False)
+        # The image tag to use on the docker image. "local" is a special value that resolves to "latest" without
+        # ever attempting to pull.
         self.image_tag = config_data.get("image_tag", "local")
+        # Environment variables to send to the container
         self.environment = config_data.get("environment", {})
+        # Fast kill says if the container is safe to kill immediately
         self.fast_kill = config_data.get("fast_kill", False)
+        # System says if the container is a supporting "system" container, and lives and runs
+        # outside of the profiles (e.g. it's ignored by bay restart, or bay up)
+        self.system = config_data.get("system", False)
+        # Build args to pass into the container; right now, these are only settable by plugins.
         self.buildargs = {}
         # Store all extra data so plugins can get to it
         self.extra_data = {
