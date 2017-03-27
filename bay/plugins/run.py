@@ -112,7 +112,7 @@ def stop(app, containers, host):
     # Look through the formation and remove the containers matching the name
     for instance in list(formation):
         # If there are no names, then we remove everything
-        if instance.container in containers or not containers:
+        if instance.container in containers or (not containers and not instance.container.system):
             # Make sure that it was not removed already as a dependent
             if instance.formation:
                 formation.remove_instance(instance)
