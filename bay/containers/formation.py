@@ -120,6 +120,18 @@ class ContainerFormation:
         """
         return any(instance.container == container for instance in self)
 
+    def get_container_instance(self, container_name):
+        """
+        Given the container name (not the runtime name, the working
+        human name to refer to), returns the corresponding
+        ContainerInstance.
+        """
+        for instance in self:
+            if instance.container.name == container_name:
+                return instance
+
+        raise ValueError("Could not find a running instance of {}".format(container_name))
+
     def __getitem__(self, key):
         return self.container_instances[key]
 
