@@ -189,6 +189,17 @@ class Container:
         else:
             return []
 
+    def get_named_volume_path(self, volume_name):
+        """
+        Returns the mount path, given a volume name.
+
+        Raises an error if the volume_name provided is not moutned.
+        """
+        for path, name in self.named_volumes.items():
+            if name == volume_name:
+                return path
+        raise ValueError("{} is not mounted".format(volume_name))
+
     @property
     def bound_volumes(self):
         value = self.get_parent_value("bound_volumes", {})

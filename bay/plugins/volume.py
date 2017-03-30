@@ -1,11 +1,14 @@
 import attr
 import click
-from docker.errors import NotFound
+from docker.errors import NotFound, APIError
+from io import BytesIO
+import tarfile
 
 from .base import BasePlugin
 from ..cli.argument_types import HostType
 from ..cli.table import Table
 from ..cli.tasks import Task
+from ..docker.introspect import FormationIntrospector
 
 
 @attr.s
@@ -73,5 +76,40 @@ def destroy(app, host, name):
     except NotFound:
         task.add_extra_info("There is no volume called {}".format(name))
         task.finish(status="Not found", status_flavor=Task.FLAVOR_BAD)
+    else:
+        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+
+
+@volume.command()
+@click.option("--host", "-h", type=HostType(), default="default")
+@click.argument("src")
+@click.argument("container_name")
+@click.argument("volume_name")
+@click.pass_obj
+def copy_to_docker(app, host, src, container_name, volume_name):
+    """
+    Copy a local file into docker volumes.
+    """
+    task = Task("Copying {} to {}:{}".format(src, container_name, volume_name))
+    formation = FormationIntrospector(host, app.containers).introspect()
+
+    instance = formation.get_container_instance(container_name)
+
+    # Get the mount path of the volume
+    path = instance.container.get_named_volume_path(volume_name)
+
+    # Create a tar stream of the file
+    tar_stream = BytesIO()
+    with tarfile.open(fileobj=tar_stream, mode="w") as tar:
+        tar.add(src)
+    tar_stream.seek(0)
+
+    try:
+        host.client.put_archive(container=instance.name,
+                                path=path,
+                                data=tar_stream)
+    except APIError as e:
+        task.finish(status="Failed to copy", status_flavor=Task.FLAVOR_BAD)
+
     else:
         task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
