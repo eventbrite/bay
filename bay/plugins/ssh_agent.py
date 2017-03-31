@@ -28,7 +28,7 @@ class SSHAgentPlugin(BasePlugin):
 
     def pre_build(self, host, container, task):
         """
-        Injects the SSH_AUTH_HOST variable into builds if it's needed.
+        Injects the TUGBOAT_SSH_AUTH_HOST variable into builds if it's needed.
         """
         # TODO: Rename this to SSH_AUTH_HOST
         # See if this container needs ssh-agent during build
@@ -37,7 +37,7 @@ class SSHAgentPlugin(BasePlugin):
             return
         # See if the SSH auth container is running
         if self.ssh_container_running(host):
-            container.buildargs['SSH_AUTH_HOST'] = host.build_host_ip
+            container.buildargs['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
         elif required:
             raise DockerRuntimeError(
                 "The container {} needs an SSH Agent to build but one is not started".format(container.name),
@@ -61,7 +61,7 @@ class SSHAgentPlugin(BasePlugin):
                 return
             # See if the SSH auth container is running
             if self.ssh_container_running(host):
-                instance.environment['SSH_AUTH_HOST'] = host.build_host_ip
+                instance.environment['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
             elif required:
                 raise DockerRuntimeError(
                     "The container {} needs an SSH Agent to run but one is not started".format(instance.container.name)
