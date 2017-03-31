@@ -1,6 +1,12 @@
 2.1.0 (2017-03-30)
 ------------------
 
+- Revert "Rename TUGBOAT_SSH_AUTH_HOST to SSH_AUTH_HOST"
+
+
+2.1.0 (2017-03-30)
+------------------
+
 - Rename TUGBOAT_SSH_AUTH_HOST to SSH_AUTH_HOST
 - Command to copy a local file to a mounted volume on a container
 - Don't stop system containers in general "bay stop"
