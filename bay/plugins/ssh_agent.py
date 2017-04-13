@@ -37,7 +37,6 @@ class SSHAgentPlugin(BasePlugin):
             return
         # See if the SSH auth container is running
         if self.ssh_container_running(host):
-            import ipdb; ipdb.set_trace()
             container.buildargs['SSH_AUTH_HOST'] = host.build_host_ip
             # TODO Deprecate TUGBOAT_SSH_AUTH_HOST by deleting the below line.
             container.buildargs['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
