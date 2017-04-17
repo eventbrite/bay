@@ -1,4 +1,14 @@
-2.1.0 (2017-03-30)
+2.2.0 (2017-04-17)
+------------------
+
+- Link format in bay.yaml files has changed to be based on a links: top-level
+  key with optional: and required: sub-keys.
+- Profiles can now inherit in a chained fashion
+- SSH_AUTH_HOST is now supplied alongside TUGBOAT_SSH_AUTH_HOST in preparation
+  for future deprecation.
+
+
+2.1.1 (2017-03-30)
 ------------------
 
 - Revert "Rename TUGBOAT_SSH_AUTH_HOST to SSH_AUTH_HOST"
