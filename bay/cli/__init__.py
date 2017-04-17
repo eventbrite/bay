@@ -82,29 +82,36 @@ class App(object):
         """
         Loads the current profile stack
         """
-        user_profile_path = os.path.join(
+        self.user_profile_path = os.path.join(
             self.config["bay"]["user_profile_home"],
             self.containers.prefix,
             "user_profile.yaml"
         )
 
-        if os.path.exists(user_profile_path):
-            self.user_profile = Profile(user_profile_path)
+        # Load the user profile, if it exists.
+        if os.path.exists(self.user_profile_path):
+            self.user_profile = Profile(self.user_profile_path)
         else:
             self.user_profile = NullProfile()
+        self.profiles = [self.user_profile]
 
-        if self.user_profile.parent_profile:
-            self.parent_profile = Profile(
-                os.path.join(
-                    self.config["bay"]["home"],
-                    "profiles",
-                    "{}.yaml".format(self.user_profile.parent_profile)
-                ),
-                default_boot_compatability=True,
+        # Keep following the parent profile tree until we hit the end
+        while self.profiles[-1].parent_profile:
+            next_profile_path = os.path.join(
+                self.config["bay"]["home"],
+                "profiles",
+                "{}.yaml".format(self.profiles[-1].parent_profile)
             )
-            self.parent_profile.apply(self.containers)
+            if not os.path.exists(next_profile_path):
+                raise RuntimeError("Cannot load profile %s" % next_profile_path)
+            self.profiles.append(Profile(
+                next_profile_path,
+                default_boot_compatability=True,
+            ))
 
-        self.user_profile.apply(self.containers)
+        # Now apply them in reverse order
+        for profile in reversed(self.profiles):
+            profile.apply(self.containers)
 
     def add_hook(self, hook_type, receiver):
         """

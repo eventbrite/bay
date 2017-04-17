@@ -26,6 +26,7 @@ class Profile:
     def __attrs_post_init__(self):
         if self.load_immediately:
             self.load()
+        self.name = os.path.basename(self.file_path).split(".")[0]
 
     def load(self):
         """
@@ -39,7 +40,7 @@ class Profile:
 
         # Parse container details
         try:
-            self.parent_profile = data.get("name")
+            self.parent_profile = data.get("inherits", data.get("name"))
         except AttributeError:
             self.parent_profile = None  # The parent profile is a null.
 
@@ -50,13 +51,19 @@ class Profile:
             if details is None:
                 details = {}
             self.containers[name] = {
-                "extra_links": set(details.get("extra_links") or []),
-                "ignore_links": set(details.get("ignore_links") or []),
+                "links": details.get("links") or {},
                 "devmodes": set(details.get("devmodes") or []),
                 "ports": details.get("ports") or {},
                 "environment": details.get("environment") or {},
                 "ephemeral": details.get("ephemeral") or False,
             }
+            # Make sure links has dicts for the right things
+            self.containers[name]["links"].setdefault("optional", [])
+            self.containers[name]["links"].setdefault("required", [])
+            # Merge legacy settings into those
+            # TODO: Remove old profile links format
+            self.containers[name]["links"]["optional"].extend(details.get("ignore_links") or [])
+            self.containers[name]["links"]["required"].extend(details.get("extra_links") or [])
 
     def dump(self):
         data = {
@@ -68,7 +75,16 @@ class Profile:
             if container_data and not container_data.get('ephemeral'):
                 container_details_to_write = {}
                 for k, v in container_data.items():
-                    if v:
+                    # Only write out links if populated
+                    if k == "links":
+                        if v["optional"]:
+                            container_details_to_write.setdefault("links", {})
+                            container_details_to_write["links"]["optional"] = sorted(v["optional"])
+                        if v["required"]:
+                            container_details_to_write.setdefault("links", {})
+                            container_details_to_write["links"]["required"] = sorted(v["required"])
+                    # Serialize sets as sorted lists
+                    elif v:
                         if isinstance(v, set):
                             container_details_to_write[k] = sorted(v)
                         else:
@@ -97,7 +113,7 @@ class Profile:
                 warnings.warn("Cannot apply profile for nonexistent container {}".format(name))
                 continue
             # Apply container links
-            if details.get('ignore_links') or details.get('extra_links'):
+            if details["links"]["required"] or details["links"]["optional"]:
                 self.graph.set_dependencies(
                     container,
                     [self.graph[link]
@@ -136,26 +152,29 @@ class Profile:
         """
         Works out what links the container should have
         """
-        ignore_links = self.containers[container.name].get('ignore_links') or set()
-        extra_links = self.containers[container.name].get('extra_links') or set()
-        # Are any ignored links not valid links?
-        if ignore_links - container.all_links:
-            raise BadConfigError(
-                "Profile contains invalid ignore_links for {}: {}".format(
-                    container.name,
-                    ignore_links - container.all_links,
+        # Check that they are all valid links
+        optional_links = self.containers[container.name]['links']['optional']
+        required_links = self.containers[container.name]['links']['required']
+        for link_name in optional_links:
+            if link_name not in container.links:
+                raise BadConfigError(
+                    "Profile contains invalid optional link for {}: {}".format(container.name, link_name)
                 )
-            )
-        # Are any extra links not valid links?
-        if extra_links - container.all_links:
-            raise BadConfigError(
-                "Profile contains invalid extra_links for {}: {}".format(
-                    container.name,
-                    extra_links - container.all_links,
+        for link_name in required_links:
+            if link_name not in container.links:
+                raise BadConfigError(
+                    "Profile contains invalid required link for {}: {}".format(container.name, link_name)
                 )
-            )
         # Work out desired final set of links
-        return (container.default_links - ignore_links) | extra_links
+        current_dependencies = [c.name for c in self.graph.dependencies(container)]
+        return {
+            link_name
+            for link_name, link_options in container.links.items()
+            if (
+                (link_name in current_dependencies and link_name not in optional_links) or
+                (link_name in required_links)
+            )
+        }
 
     def save(self):
         """

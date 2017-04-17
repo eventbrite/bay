@@ -193,6 +193,10 @@ class FormationRunner:
         """
         Creates the Docker container on the host, ready to be started.
         """
+        # Make sure it's not an abstract container being started.
+        if instance.container.abstract and not instance.foreground:
+            raise ValueError("You cannot boot an abstract container.")
+
         # Wait for the global container manipulation lock
         with changing_containers.entry_lock(instance.name):
             # See if the container was already started

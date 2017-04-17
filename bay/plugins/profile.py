@@ -9,7 +9,7 @@ from ..cli.argument_types import HostType
 from ..cli.colors import CYAN, RED
 from ..cli.table import Table
 from ..cli.tasks import Task
-from ..containers.profile import Profile
+from ..containers.profile import Profile, NullProfile
 from ..docker.introspect import FormationIntrospector
 
 
@@ -29,63 +29,42 @@ class ProfilesPlugin(BasePlugin):
 
 @click.command()
 @click.argument('name', required=False)
-@click.option('--up/--no-up', '-u', default=False)
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.pass_obj
-def profile(app, name, up, host):
+def profile(app, name, host):
     """
     Switch to a different profile, or list the active profile's name.
     """
-    user_profile_path = os.path.join(
-        app.config["bay"]["user_profile_home"],
-        app.containers.prefix,
-        "user_profile.yaml"
-    )
-    parent_profile_name = None
-
-    if os.path.isfile(user_profile_path):
-        user_profile = Profile(user_profile_path)
-        parent_profile_name = user_profile.parent_profile
-    else:
-        user_profile = Profile(user_profile_path, load_immediately=False)
-        parent_profile_name = None
-
     if name is None:
-        # if no profile is provided, print curremt profile and exit
-        if parent_profile_name:
-            click.echo(parent_profile_name)
+        # if no profile is provided, print current profile stack and exit
+        if len(app.profiles) > 1:
+            for i, parent_profile in enumerate(app.profiles[1:]):
+                if i:
+                    click.echo("%s↳ %s" % ("  " * i, parent_profile.name))
+                else:
+                    click.echo(parent_profile.name)
         else:
             click.echo(RED("No profile selected."))
         return
 
-    # Apply the selected profile
+    # Find the profile they named on the command line
     parent_profile_path = os.path.join(
         app.config["bay"]["home"],
         "profiles",
         "{}.yaml".format(name)
     )
-
-    if os.path.isfile(parent_profile_path):
-        # TODO: Use ProfileType to validate the profile name
-        parent_profile = Profile(parent_profile_path)
-    else:
+    if not os.path.isfile(parent_profile_path):
         click.echo(RED("Invalid profile name!"))
         return
+    parent_profile = Profile(parent_profile_path)
 
     click.echo("Switching to profile %s" % CYAN(name))
 
-    parent_profile.apply(app.containers)
-
-    # save the applied profile to the current profile details as the
-    # parent_profile
-    user_profile.parent_profile = name
-    user_profile.save()
-
-    # apply the user_profile on top of the parent_profile
-    user_profile.apply(app.containers)
-
-    if up:
-        up(app, host)
+    # Set it in the user profile, making a new user profile if needed
+    if isinstance(app.user_profile, NullProfile):
+        app.user_profile = Profile(app.user_profile_path, load_immediately=False)
+    app.user_profile.parent_profile = name
+    app.user_profile.save()
 
 
 @click.command()
