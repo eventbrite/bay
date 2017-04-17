@@ -80,7 +80,15 @@ class ContainerGraph:
         # Link by dependency
         for container in containers:
             # Runtime dependencies
-            self.set_dependencies(container, [self.containers[link] for link in container.default_links])
+            self.set_dependencies(
+                container,
+                [
+                    self.containers[link_name]
+                    for link_name, link_details
+                    in container.links.items()
+                    if link_details.get("required")
+                ],
+            )
             # Build dependencies
             if container.build_parent_in_prefix:
                 self.add_build_dependency(container, self.containers[container.build_parent.split("/")[1]])

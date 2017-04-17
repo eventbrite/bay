@@ -93,9 +93,25 @@ class Container:
                 config_data = yaml.safe_load(fh.read()) or {}
         else:
             config_data = {}
-        # Set our attributes with empty defaults
-        self.default_links = set(config_data.get("links", []))
-        self.all_links = set(config_data.get("extra_links", [])).union(self.default_links)
+        # Calculate links
+        # TODO: Remove old, deprecated links format.
+        self.links = {}
+        config_links = config_data.get("links", {})
+        if isinstance(config_links, list):
+            # Old list format
+            for link_name in config_links:
+                self.links[link_name] = {"required": True}
+        else:
+            # New links format
+            for link_name in (config_links.get("required") or []):
+                self.links[link_name] = {"required": True}
+            for link_name in (config_links.get("optional") or []):
+                self.links[link_name] = {"required": False}
+        # Old extra links key
+        config_extra_links = config_data.get("extra_links", [])
+        if config_extra_links:
+            for link_name in config_extra_links:
+                self.links[link_name] = {"required": False}
         # Parse waits from the config format
         self.waits = []
         for wait_dict in config_data.get("waits", []):
@@ -156,6 +172,9 @@ class Container:
         # System says if the container is a supporting "system" container, and lives and runs
         # outside of the profiles (e.g. it's ignored by bay restart, or bay up)
         self.system = config_data.get("system", False)
+        # Abstract says if the container is not intended to ever be run or linked to, just
+        # used as a base for other containers
+        self.abstract = config_data.get("abstract", False)
         # Build args to pass into the container; right now, these are only settable by plugins.
         self.buildargs = {}
         # Store all extra data so plugins can get to it
