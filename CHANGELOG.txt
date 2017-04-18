@@ -1,3 +1,9 @@
+2.2.1 (2017-04-18)
+------------------
+
+- Only supply build args when the dockerfile consumes them
+
+
 2.2.0 (2017-04-17)
 ------------------
 
