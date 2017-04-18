@@ -106,17 +106,19 @@ class Builder:
                     # Make sure data is a string
                     if isinstance(data, bytes):
                         data = data.decode("utf8")
-                    data = json.loads(data)
-                    if 'stream' in data:
-                        # docker data stream has extra newlines in it, so we will
-                        # strip them before logging.
-                        self.logger.info(data['stream'].rstrip())
-                        if data['stream'].startswith('Step '):
-                            progress += 1
-                            self.task.update(status="." * progress)
-                    if 'error' in data:
-                        self.logger.info(data['error'].rstrip())
-                        build_successful = False
+                    # Deal with any potential double chunks
+                    for data_segment in data.strip().split("\r\n"):
+                        data_obj = json.loads(data_segment.strip())
+                        if 'stream' in data_obj:
+                            # docker data stream has extra newlines in it, so we will
+                            # strip them before logging.
+                            self.logger.info(data_obj['stream'].rstrip())
+                            if data_obj['stream'].startswith('Step '):
+                                progress += 1
+                                self.task.update(status="." * progress)
+                        if 'error' in data_obj:
+                            self.logger.info(data_obj['error'].rstrip())
+                            build_successful = False
                 self.logger.task = self.task
 
             if not build_successful:

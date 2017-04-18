@@ -37,9 +37,11 @@ class SSHAgentPlugin(BasePlugin):
             return
         # See if the SSH auth container is running
         if self.ssh_container_running(host):
-            container.buildargs['SSH_AUTH_HOST'] = host.build_host_ip
-            # TODO Deprecate TUGBOAT_SSH_AUTH_HOST by deleting the below line.
-            container.buildargs['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
+            if 'SSH_AUTH_HOST' in container.possible_buildargs:
+                container.buildargs['SSH_AUTH_HOST'] = host.build_host_ip
+            # TODO Deprecate TUGBOAT_SSH_AUTH_HOST by deleting the below lines.
+            if 'TUGBOAT_SSH_AUTH_HOST' in container.possible_buildargs:
+                container.buildargs['TUGBOAT_SSH_AUTH_HOST'] = host.build_host_ip
         elif required:
             raise DockerRuntimeError(
                 "The container {} needs an SSH Agent to build but one is not started".format(container.name),

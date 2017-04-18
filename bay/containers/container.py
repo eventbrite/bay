@@ -16,7 +16,7 @@ class Container:
     All containers are backed by a local disk directory containing their information,
     even if the actual running server is remote.
     """
-    parent_pattern = re.compile(r'^FROM\s+([\S/]+)', re.IGNORECASE | re.MULTILINE)
+    parent_pattern = re.compile(r'^FROM\s+([\S/]+)', re.IGNORECASE)
     git_volume_pattern = re.compile(r'^\{git@github.com:eventbrite/([\w\s\-]+).git\}(.*)$')
 
     graph = attr.ib(repr=False, hash=False, cmp=False)
@@ -75,12 +75,21 @@ class Container:
             prefix=self.graph.prefix,
             name=self.name,
         )
-        # Load parent image from Dockerfile
+        # Load parent image and possible build args from Dockerfile
+        self.possible_buildargs = set()
+        self.build_parent = None
         with open(self.dockerfile_path, "r") as fh:
-            self.build_parent = self.parent_pattern.search(fh.read()).group(1)
-            # Make sure any ":" in the dockerfile is changed to a "-"
-            # TODO: Add warning here once we've converted enough of the dockerfiles
-            self.build_parent = self.build_parent.replace(":", "-")
+            for line in fh:
+                parent_match = self.parent_pattern.match(line)
+                if parent_match:
+                    self.build_parent = parent_match.group(1)
+                    # Make sure any ":" in the parent is changed to a "-"
+                    # TODO: Add warning here once we've converted enough of the dockerfiles
+                    self.build_parent = self.build_parent.replace(":", "-")
+                elif line.lower().startswith("ARG "):
+                    self.possible_buildargs.add(line.split()[1])
+        if self.build_parent is None:
+            raise BadConfigError("Container {} has no valid FROM line".format(self.path))
         self.build_parent_in_prefix = self.build_parent.startswith(self.graph.prefix + '/')
         # Ensure it does not have an old-style multi version inheritance
         if self.build_parent_in_prefix and ":" in self.build_parent:
