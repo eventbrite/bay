@@ -86,7 +86,7 @@ class Container:
                     # Make sure any ":" in the parent is changed to a "-"
                     # TODO: Add warning here once we've converted enough of the dockerfiles
                     self.build_parent = self.build_parent.replace(":", "-")
-                elif line.lower().startswith("ARG "):
+                elif line.lower().startswith("arg "):
                     self.possible_buildargs.add(line.split()[1])
         if self.build_parent is None:
             raise BadConfigError("Container {} has no valid FROM line".format(self.path))
