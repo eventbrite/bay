@@ -9,6 +9,8 @@ Bay Documentation
 
    introduction
    project-layout
+   usage
+   commands
    theory
 
 .. include:: ../Readme.rst

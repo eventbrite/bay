@@ -1,6 +1,7 @@
 Theory & Data Model
 ===================
 
+
 Container Graph
 ---------------
 
@@ -9,6 +10,7 @@ The set of available containers are arranged in a datastructure called a
 runtime dependencies on each other.
 
 The graph can be mutated by profiles to change the available links.
+
 
 Buildable Volumes
 -----------------
