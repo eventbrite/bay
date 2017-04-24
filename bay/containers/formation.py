@@ -1,7 +1,7 @@
 import attr
 import warnings
 
-from ..exceptions import BadConfigError, ImageNotFoundException
+from ..exceptions import ImageNotFoundException
 from ..utils.sorting import dependency_sort
 
 
@@ -178,15 +178,17 @@ class ContainerInstance:
         Cross-checks the settings we have against the options the Container has
         """
         # Verify all link targets are possible
-        for alias, target in self.links.items():
+        for alias, target in list(self.links.items()):
             if isinstance(target, str):
                 raise ValueError("Link target {} is still a string!".format(target))
             if target.container not in self.container.graph.dependencies(self.container):
-                raise BadConfigError("It is not possible to link %s to %s as %s" % (target, self.container, alias))
+                warnings.warn("It is not possible to link %s to %s as %s" % (target, self.container, alias))
+                del self.links[alias]
         # Verify devmodes exist
-        for devmode in self.devmodes:
+        for devmode in list(self.devmodes):
             if devmode not in self.container.devmodes:
-                raise BadConfigError("Invalid devmode %s" % devmode)
+                warnings.warn("Invalid devmode %s on container %s" % (devmode, self.container.name))
+                self.devmodes.remove(devmode)
 
     def clone(self):
         """
