@@ -26,6 +26,7 @@ class RunPlugin(BasePlugin):
         self.add_command(stop)
         self.add_command(restart)
         self.add_alias(restart, "hup")
+        self.add_alias(restart, "reload")
 
 
 @click.command()
