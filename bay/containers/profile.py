@@ -26,7 +26,10 @@ class Profile:
     def __attrs_post_init__(self):
         if self.load_immediately:
             self.load()
-        self.name = os.path.basename(self.file_path).split(".")[0]
+        if self.file_path:
+            self.name = os.path.basename(self.file_path).split(".")[0]
+        else:
+            self.name = "<empty>"
 
     def load(self):
         """
