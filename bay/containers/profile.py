@@ -162,12 +162,20 @@ class Profile:
         for link_name in optional_links:
             if link_name not in container.links:
                 raise BadConfigError(
-                    "Profile contains invalid optional link for {}: {}".format(container.name, link_name)
+                    "Profile {} contains invalid optional link for {}: {}".format(
+                        self.name,
+                        container.name,
+                        link_name,
+                    )
                 )
         for link_name in required_links:
             if link_name not in container.links:
                 raise BadConfigError(
-                    "Profile contains invalid required link for {}: {}".format(container.name, link_name)
+                    "Profile {} contains invalid required link for {}: {}".format(
+                        self.name,
+                        container.name,
+                        link_name,
+                    )
                 )
         # Work out desired final set of links
         current_dependencies = [c.name for c in self.graph.dependencies(container)]
