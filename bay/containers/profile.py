@@ -113,12 +113,13 @@ class Profile:
                 warnings.warn("Cannot apply profile for nonexistent container {}".format(name))
                 continue
             # Apply container links
-            if details["links"]["required"] or details["links"]["optional"]:
-                self.graph.set_dependencies(
-                    container,
-                    [self.graph[link]
-                    for link in self.calculate_links(container)],
-                )
+            if "links" in details:
+                if details["links"]["required"] or details["links"]["optional"]:
+                    self.graph.set_dependencies(
+                        container,
+                        [self.graph[link]
+                        for link in self.calculate_links(container)],
+                    )
             # Set flag saying it's specified in a profile (for bay build
             # profile) - not set for the user profile for now
             # TODO: remove user profile restriction with default boot compat stuff
