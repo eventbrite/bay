@@ -59,6 +59,7 @@ class Profile:
                 "ports": details.get("ports") or {},
                 "environment": details.get("environment") or {},
                 "ephemeral": details.get("ephemeral") or False,
+                "default_boot": details.get("default_boot"),
             }
             # Make sure links has dicts for the right things
             self.containers[name]["links"].setdefault("optional", [])
@@ -129,13 +130,14 @@ class Profile:
             if self.default_boot_compatability:
                 self.graph.set_option(container, "in_profile", True)
             # Set default boot mode
-            if details.get('default_boot'):
-                self.graph.set_option(container, "default_boot", True)
-            # TODO: Remove this temporary fix that allows parent profiles
-            # default boot based on just having the container in the profile
-            # (provided it is not a foreground container)
-            if not container.foreground and self.default_boot_compatability:
-                self.graph.set_option(container, "default_boot", True)
+            if details.get('default_boot') is not None:
+                self.graph.set_option(container, "default_boot", bool(details['default_boot']))
+            else:
+                # TODO: Remove this temporary fix that allows parent profiles
+                # default boot based on just having the container in the profile
+                # (provided it is not a foreground container)
+                if not container.foreground and self.default_boot_compatability:
+                    self.graph.set_option(container, "default_boot", True)
             # Set devmodes
             self.graph.set_option(container, "devmodes", details["devmodes"])
             # Set ports to apply
