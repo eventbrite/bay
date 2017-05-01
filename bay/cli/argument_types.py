@@ -5,9 +5,19 @@ from click import Choice
 from .spell import spell_correct
 from .colors import PURPLE, CYAN
 from ..utils.functional import cached_property
-
+from ..config import Config
+from ..containers.graph import ContainerGraph
 
 Choice = attr.s(these={"_choices": attr.ib(default=None)}, init=False)(Choice)
+
+
+def get_config():
+    if not hasattr(Config, "_default_instance"):
+        Config._default_instance = ContainerGraph(Config.defaults["bay"]["home"])
+        Config.default_devmodes = Config._default_instance.devmode_names()
+        Config.default_containers = set(Config._default_instance.containers.keys())
+
+    return Config
 
 
 @attr.s
@@ -56,7 +66,7 @@ class ContainerType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return []
+            return get_config().default_containers
         # Return valid choices
         containers = self.context.obj.containers
         choices = [container.name
@@ -104,7 +114,7 @@ class MountType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return []
+            return get_config().default_devmodes
         # Collapse lists of list of devmode keys into a single set
         choices = set(itertools.chain.from_iterable(
             container.devmodes.keys()
