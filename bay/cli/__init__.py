@@ -33,6 +33,10 @@ class App(object):
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
 
+    _default_instance = ContainerGraph(Config.defaults["bay"]["home"])
+    default_devmodes = _default_instance.devmode_names()
+    default_containers = set(_default_instance.containers.keys())
+
     def load_config(self, config_paths):
         self.config = Config(config_paths)
         self.hosts = HostManager.from_config(self.config)
