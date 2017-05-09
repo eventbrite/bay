@@ -236,6 +236,7 @@ class FormationRunner:
             })
 
             # Work out volumes configuration
+            volume_mode = "rw,cached" if self.host.supports_cached_volumes else "rw"
             volume_mountpoints = []
             volume_binds = {}
             for mount_path, source in instance.container.bound_volumes.items():
@@ -244,10 +245,10 @@ class FormationRunner:
                         "Volume mount source directory {} does not exist".format(source)
                     )
                 volume_mountpoints.append(mount_path)
-                volume_binds[source] = {"bind": mount_path, "mode": "rw"}
+                volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
             for mount_path, source in instance.container.named_volumes.items():
                 volume_mountpoints.append(mount_path)
-                volume_binds[source] = {"bind": mount_path, "mode": "rw"}
+                volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
 
             # Add any active devmodes
             for mount_name in instance.devmodes:
@@ -255,7 +256,7 @@ class FormationRunner:
                     volume_mountpoints.append(mount_path)
                     source = os.path.abspath(source)
                     if os.path.exists(source):
-                        volume_binds[source] = {"bind": mount_path, "mode": "rw"}
+                        volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
                     else:
                         raise NotFoundException("The volume source path {} does not exist".format(source))
 
