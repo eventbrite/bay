@@ -197,4 +197,3 @@ class Host(object):
             return LooseVersion(base_version) >= LooseVersion("17.05.0")
         else:
             return False
-
