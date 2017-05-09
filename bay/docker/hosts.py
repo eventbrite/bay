@@ -3,6 +3,7 @@ import docker
 import os
 import sys
 import urllib.parse
+from distutils.version import LooseVersion
 
 from ..exceptions import DockerNotAvailableError
 from ..utils.functional import cached_property, thread_cached_property
@@ -190,4 +191,10 @@ class Host(object):
         If the host supports passing the "cached" flag to volumes to speed them
         up (implemented in Docker for Mac)
         """
-        return self.is_docker_for_mac
+        if self.is_docker_for_mac:
+            version_info = self.client.version()
+            base_version = version_info['Version'].split("-")
+            return LooseVersion(base_version) >= LooseVersion("17.05.0")
+        else:
+            return False
+
