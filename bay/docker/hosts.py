@@ -1,6 +1,7 @@
 import attr
 import docker
 import os
+import sys
 import urllib.parse
 
 from ..exceptions import DockerNotAvailableError
@@ -170,3 +171,23 @@ class Host(object):
         build, which is the gateway of the default bridge network.
         """
         return self.client.inspect_network("bridge")['IPAM']['Config'][0]['Gateway']
+
+    @cached_property
+    def is_docker_for_mac(self):
+        """
+        Works out if the current install is docker for mac or docker-machine
+        based.
+        """
+        if sys.platform != "darwin":
+            return False
+        if self.url_scheme != "unix":
+            return False
+        return True
+
+    @cached_property
+    def supports_cached_volumes(self):
+        """
+        If the host supports passing the "cached" flag to volumes to speed them
+        up (implemented in Docker for Mac)
+        """
+        return self.is_docker_for_mac
