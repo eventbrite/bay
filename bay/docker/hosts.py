@@ -193,7 +193,7 @@ class Host(object):
         """
         if self.is_docker_for_mac:
             version_info = self.client.version()
-            base_version = version_info['Version'].split("-")
+            base_version = version_info['Version'].split("-")[0]
             return LooseVersion(base_version) >= LooseVersion("17.05.0")
         else:
             return False
