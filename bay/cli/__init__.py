@@ -32,23 +32,23 @@ class App(object):
     """
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
+    config_paths = None
 
     @classmethod
-    def set_default(cls, instance):
-        if not hasattr(cls, "_default_instance"):
-            cls._default_instance = instance
+    def get_default_containers(cls):
+        if not hasattr(cls, "containers"):
+            default_config_paths = ()
+            cls.load_config(default_config_paths)
+        return cls.containers
 
     @classmethod
-    def get_default(cls):
-        if not hasattr(cls, "_default_instance"):
-            cls._default_instance = ContainerGraph(Config.defaults["bay"]["home"])
-        return cls._default_instance
-
-    def load_config(self, config_paths):
-        self.config = Config(config_paths)
-        self.hosts = HostManager.from_config(self.config)
-        self.containers = self.get_default()
-        self.root_task = RootTask()
+    def load_config(cls, config_paths):
+        if cls.config_paths != config_paths:
+            cls.config_paths = config_paths
+            cls.config = Config(config_paths)
+            cls.hosts = HostManager.from_config(cls.config)
+            cls.containers = ContainerGraph(cls.config["bay"]["home"])
+            cls.root_task = RootTask()
 
     def load_plugins(self):
         """
