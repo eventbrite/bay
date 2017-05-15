@@ -57,7 +57,7 @@ class ContainerType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return App.get_default().containers.keys()
+            return App.get_default_containers().containers.keys()
         # Return valid choices
         containers = self.context.obj.containers
         choices = [container.name
@@ -105,7 +105,7 @@ class MountType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return App.get_default().devmode_names()
+            return App.get_default_containers().devmode_names()
         # Collapse lists of list of devmode keys into a single set
         choices = self.context.obj.containers.devmode_names()
 
