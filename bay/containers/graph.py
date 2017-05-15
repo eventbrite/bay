@@ -1,5 +1,6 @@
 import os
 import yaml
+import itertools
 
 import attr
 
@@ -146,6 +147,16 @@ class ContainerGraph:
             if container in dependencies:
                 result.add(candidate)
         return result
+
+    def devmode_names(self):
+        """
+        Returns a set of all available devmode names
+        """
+        devmode_names = set(itertools.chain.from_iterable(
+            container.devmodes.keys() for container in self
+        ))
+
+        return devmode_names
 
     def build_ancestry(self, container):
         """

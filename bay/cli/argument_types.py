@@ -2,6 +2,7 @@ import itertools
 
 import attr
 from click import Choice
+from . import App
 from .spell import spell_correct
 from .colors import PURPLE, CYAN
 from ..utils.functional import cached_property
@@ -56,7 +57,7 @@ class ContainerType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return []
+            return App.get_default_containers().containers.keys()
         # Return valid choices
         containers = self.context.obj.containers
         choices = [container.name
@@ -104,10 +105,8 @@ class MountType(SpellCorrectChoice):
     def choices(self):
         # Handle no object in the context during error states
         if not hasattr(self.context, "obj"):
-            return []
+            return App.get_default_containers().devmode_names()
         # Collapse lists of list of devmode keys into a single set
-        choices = set(itertools.chain.from_iterable(
-            container.devmodes.keys()
-            for container in self.context.obj.containers
-        ))
+        choices = self.context.obj.containers.devmode_names()
+
         return sorted(choices)
