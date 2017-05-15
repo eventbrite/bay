@@ -209,12 +209,12 @@ class AppGroup(SpellcheckableAliasableGroup):
 @click.command(cls=AppGroup, app_class=App)
 @click.version_option()
 @click.pass_obj
-def cli(app, config):
+def cli(app):
     """
     Bay, the Docker-based development environment management tool.
     """
     # Load config based on CLI parameters
-    app.load_config(config)
+    app.load_config()
     app.load_profiles()
 
 
