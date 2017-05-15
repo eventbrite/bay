@@ -1,5 +1,3 @@
-import itertools
-
 import attr
 from click import Choice
 from . import App
