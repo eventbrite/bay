@@ -207,7 +207,6 @@ class AppGroup(SpellcheckableAliasableGroup):
 
 
 @click.command(cls=AppGroup, app_class=App)
-@click.option('-c', '--config', multiple=True)
 @click.version_option()
 @click.pass_obj
 def cli(app, config):
