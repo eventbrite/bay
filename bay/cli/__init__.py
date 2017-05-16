@@ -32,23 +32,20 @@ class App(object):
     """
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
-    config_paths = None
 
     @classmethod
     def get_default_containers(cls):
         if not hasattr(cls, "containers"):
-            default_config_paths = ()
-            cls.load_config(default_config_paths)
+            cls.load_config()
         return cls.containers
 
     @classmethod
-    def load_config(cls, config_paths):
-        if cls.config_paths != config_paths:
-            cls.config_paths = config_paths
-            cls.config = Config(config_paths)
-            cls.hosts = HostManager.from_config(cls.config)
-            cls.containers = ContainerGraph(cls.config["bay"]["home"])
-            cls.root_task = RootTask()
+    def load_config(cls):
+        default_config_paths = ()
+        cls.config = Config(default_config_paths)
+        cls.hosts = HostManager.from_config(cls.config)
+        cls.containers = ContainerGraph(cls.config["bay"]["home"])
+        cls.root_task = RootTask()
 
     def load_plugins(self):
         """
