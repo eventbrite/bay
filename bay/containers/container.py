@@ -7,7 +7,7 @@ import attr
 from ..exceptions import BadConfigError
 
 
-@attr.s
+@attr.s(hash=True)
 class Container:
     """
     Represents a single container type that's available to run (not a running container -
