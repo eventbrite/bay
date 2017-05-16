@@ -1,3 +1,11 @@
+2.2.5 (2017-05-16)
+------------------
+
+- Fixed incompatability with new attrs 17.1 hash default
+- Docker-for-Mac detection and caching enabling (selective caching coming in future)
+- Allow child profiles to override their parent's default boot config
+
+
 2.2.4 (2017-04-25)
 ------------------
 
