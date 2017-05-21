@@ -1,10 +1,12 @@
 import attr
 import click
 import sys
+import os
+import subprocess
 
 from .base import BasePlugin
 from ..cli.argument_types import ContainerType, HostType
-from ..cli.colors import RED
+from ..cli.colors import RED, BOLD
 from ..cli.tasks import Task
 from ..docker.introspect import FormationIntrospector
 from ..docker.runner import FormationRunner
@@ -27,6 +29,7 @@ class RunPlugin(BasePlugin):
         self.add_command(restart)
         self.add_alias(restart, "hup")
         self.add_alias(restart, "reload")
+        self.add_alias(shell, "attach")
 
 
 @click.command()
@@ -83,19 +86,35 @@ def shell(app, container, host, command):
     """
     Runs a single container with foreground enabled and overridden to use bash.
     """
+    if command:
+        shell = ['/bin/bash', '-lc', ' '.join(command)]
+    else:
+        shell = ['/bin/bash']
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
+
+    # See if the container is running
+    for instance in formation:
+        if instance.container == container:
+            # Work out anything to put before the shell (e.g. ENV)
+            pre_args = []
+            click.echo(BOLD("Container is already running. Running in attach mode."))
+            if os.environ.get("TERM", None):
+                pre_args = ["env", "TERM=%s" % os.environ['TERM']]
+            # Launch into an attached shell
+            status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + shell)
+            sys.exit(status_code)
+
+    click.echo(BOLD("Container is not running. Running in shell mode."))
     # Make a Formation with that container launched with bash in foreground
     try:
         instance = formation.add_container(container, host)
     except ImageNotFoundException as e:
         click.echo(RED(str(e)))
         sys.exit(1)
+
     instance.foreground = True
-    if command:
-        instance.command = ['/bin/bash -lc "{}"'.format(' '.join(command))]
-    else:
-        instance.command = ["/bin/bash -l"]
+    instance.command = shell
     # Run that change
     task = Task("Shelling into {}".format(container.name), parent=app.root_task)
     run_formation(app, host, formation, task)
