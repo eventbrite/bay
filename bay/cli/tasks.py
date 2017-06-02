@@ -154,12 +154,14 @@ class Task:
             status_string = YELLOW(status_string)
         # Print out our line
         indent_string = " " * (self.INDENT_AMOUNT * indent)
-        yield "{}{}: {}{}".format(
+        main_line = "{}{}: {}{}".format(
             indent_string,
             CYAN(self.name),
             progress_string,
             status_string,
         )
+        if indent > 0:
+            yield main_line
         if not (self.finished and self.collapse_if_finished):
             # Print out extra info
             indent_string = (indent + 1) * (" " * self.INDENT_AMOUNT)
@@ -168,6 +170,8 @@ class Task:
             # Print out subtasks
             for subtask in self.subtasks:
                 yield from subtask.output(terminal_width, indent=indent + 1)
+        if indent == 0:
+            yield main_line
 
     def clear_and_output(self):
         """

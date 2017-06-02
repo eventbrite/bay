@@ -155,7 +155,8 @@ def build(app, containers, host, cache, recursive, verbose):
                 click.echo("  " + remove_ansi(line).rstrip())
             click.echo("See full build log at {log}".format(log=click.format_filename(logfile_name)), err=True)
             sys.exit(1)
-    click.echo()
+
+    task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
     # Show total build time metric after everything is complete
     end_time = datetime.datetime.now().replace(microsecond=0)
