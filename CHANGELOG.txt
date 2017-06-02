@@ -1,3 +1,10 @@
+2.2.6 (2017-06-02)
+------------------
+
+- Reversed output of top-level tasks to make pending operations more obvious
+- Upgraded Docker binding to 2.0 (to support recent Docker versions)
+
+
 2.2.5 (2017-05-16)
 ------------------
 
