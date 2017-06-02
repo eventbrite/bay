@@ -25,7 +25,7 @@ setup(
         'attrs',
         'Click>=6.6',
         'PyYAML',
-        'docker-py>=1.6',
+        'docker~=2.3',
         'dockerpty==0.4.1',
         'scandir',
         'requests<2.11.0',

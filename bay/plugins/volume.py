@@ -72,7 +72,7 @@ def destroy(app, host, name):
     GarbageCollector(host).gc_all(task)
     # Remove the volume
     try:
-        host.client.remove_volume(name)
+        host.client.remove_volume(name, force=True)
     except NotFound:
         task.add_extra_info("There is no volume called {}".format(name))
         task.finish(status="Not found", status_flavor=Task.FLAVOR_BAD)

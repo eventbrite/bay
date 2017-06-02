@@ -129,7 +129,7 @@ class Host(object):
             )
         # Make client
         try:
-            return docker.Client(
+            return docker.APIClient(
                 base_url=self.url,
                 version="auto",
                 timeout=10,
