@@ -1,3 +1,8 @@
+2.2.8 (2017-06-15)
+------------------
+
+- Added auto-publish to pypi in travis configuration
+
 2.2.7 (2017-06-14)
 ------------------
 
