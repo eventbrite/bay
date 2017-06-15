@@ -12,3 +12,11 @@ install:
 script:
     - flake8 .
     - python setup.py test
+
+deploy:
+    provider: pypi
+    user: eventbrite
+    password:
+        secure: B8kr6cA0V8zNcmM2jbODuX10chbcHyue+PSYC5XyvMcYhFaK7dscvIdV/OtWL9F6yHZYPOqqo6r6tfC1rZuaHms3DXuYxZ07AsYJpgkBx8AEsosS9OBYJxCBhnFvX++BAnqtJ6p+e04QTkEUG08ZWuKd/fLrZm8su1mxq5bn57zrtpVquqOyGpg+rkRr/mxyfERAbe65u5VcorkHB0UDP4SOKP1LBtFtvIjvRNPrr2pa9ADXN53ff7rlH3PkhzEqk6JUvcX0GY9u/QONI+jODEZ/5zYSwm+u4TPQBa56VYfIxPjZfd3wJQMiY8zpgIuFqlxpSJNyxSxSuPUKJKVfR4qH3Jy4VjB6z1mSu+L/3Ay9sbJvU9IKghvI9pWjgbyaGFFo/ZIUtM2mYHO9zfxwS4xkPniRP2dn5gMn9Lqr2zeqonZ5agdJs+z7CIok+/8+yqVDRexUDmSEZr32TnK8Aik4NCrYQaaQe9Xfc0BkgO0C4rprzYE+I019Y51hx/2jnpAEoUNL6z0saPHxM8QQT4LXh2tOi7FsTNuG6FsZ6wuu0wKk1JZkxiY5UVlDzeB/geXwJV8V4eIhp6DBxgGzF7NPmX1BblS3Qgj1YmcuNx/PZRfQS5Jpx37B7047lAzIzhV7h1eZ9D+W7YSKVI9NN8j8ciy5Qse+5lHRwI1wdP0=
+    on:
+        tags: true
