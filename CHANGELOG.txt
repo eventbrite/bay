@@ -1,3 +1,8 @@
+2.2.7 (2017-06-14)
+------------------
+
+- Removed force=True on volume destroy which didn't play nicely across API versions.
+
 2.2.6 (2017-06-02)
 ------------------
 
