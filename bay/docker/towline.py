@@ -1,4 +1,7 @@
+import json
+import tarfile
 import time
+from io import BytesIO
 
 from docker.errors import NotFound
 
@@ -22,7 +25,9 @@ class Towline(object):
         Helper to read the contents of a file inside a container
         """
         try:
-            contents = self.host.client.copy(self.container_name, path).strip()
+            tar_stream = self.host.client.get_archive(self.container_name, path)[0]
+            tar = tarfile.open(fileobj=BytesIO(tar_stream.read()))
+            contents = tar.extractfile(tar.getmembers()[0]).read().strip()
             return contents or default
         except NotFound:
             # Ignore missing containers or other errors
@@ -51,5 +56,12 @@ class Towline(object):
         # See if boot is complete
         if self._read_file("/tugboat/boot_complete"):
             return (True, "Towline boot complete")
+        elif container_status:
+            # Try to parse out a JSON thing
+            try:
+                towline_payload = json.loads(container_status.split(b"\n")[-1].decode("ascii"))
+                return (None, towline_payload['message'].rstrip(":"))
+            except ValueError:
+                return (None, container_status)
         else:
-            return (None, container_status)
+            return (None, None)
