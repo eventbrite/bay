@@ -66,8 +66,12 @@ class Profile:
             self.containers[name]["links"].setdefault("required", [])
             # Merge legacy settings into those
             # TODO: Remove old profile links format
-            self.containers[name]["links"]["optional"].extend(details.get("ignore_links") or [])
-            self.containers[name]["links"]["required"].extend(details.get("extra_links") or [])
+            if "ignore_links" in details:
+                warnings.warn("Old-format ignore_links detected in {}".format(self.file_path))
+                self.containers[name]["links"]["optional"].extend(details["ignore_links"])
+            if "extra_links" in details:
+                warnings.warn("Old-format extra_links detected in {}".format(self.file_path))
+                self.containers[name]["links"]["required"].extend(details["extra_links"])
 
     def dump(self):
         data = {

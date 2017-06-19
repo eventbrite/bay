@@ -1,5 +1,6 @@
 import re
 import os
+import warnings
 import yaml
 
 import attr
@@ -107,6 +108,7 @@ class Container:
         self.links = {}
         config_links = config_data.get("links", {})
         if isinstance(config_links, list):
+            warnings.warn("Old links format in {}".format(self.config_path))
             # Old list format
             for link_name in config_links:
                 self.links[link_name] = {"required": True}
@@ -119,6 +121,7 @@ class Container:
         # Old extra links key
         config_extra_links = config_data.get("extra_links", [])
         if config_extra_links:
+            warnings.warn("Old extra_links format in {}".format(self.config_path))
             for link_name in config_extra_links:
                 self.links[link_name] = {"required": False}
         # Parse waits from the config format
