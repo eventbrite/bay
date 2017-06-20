@@ -1,4 +1,5 @@
 import attr
+import click
 import json
 
 from docker.errors import NotFound
@@ -43,29 +44,25 @@ class ImageRepository:
         except ImageNotFoundException:
             return {}
 
-    def get_registry_url(self, app, task):
+    def get_registry(self, app):
         """
-        Gets the current registry URL based on the app config, returning the
-        URL to pass to docker to pull things, and running any plugin processes
-        in the meantime.
+        Given an app, returns the registry handler responsible for handling it
+        (or None if it does not need a handler)
         """
-        # Get the registry from the app
         registry = app.containers.registry
         if registry is None:
             return None
-
         # Work out what plugin to use
         plugin_name, registry_data = registry.split(":", 1)
-
         # Call the plugin to log in/etc to the registry
         registry_plugins = app.get_catalog_items("registry")
         if plugin_name == "plain":
             # The "plain" plugin is a shortcut for "no plugin"
-            return registry_data
+            return BasicRegistryHandler(app, registry_data)
         elif plugin_name in registry_plugins:
-            return registry_plugins[plugin_name](registry_data, self.host, task)
+            return registry_plugins[plugin_name](app, registry_data)
         else:
-            raise BadConfigError("No registry plugin {} loaded".format(plugin_name))
+            raise BadConfigError("No registry plugin for {} loaded".format(plugin_name))
 
     def pull_image_version(self, app, image_name, image_tag, parent_task, fail_silently=False):
         """
@@ -88,13 +85,12 @@ class ImageRepository:
                     image_tag=image_tag
                 )
 
-        task = Task(
-            "Pulling remote image {}".format(image_name),
-            parent=parent_task,
-            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
-        )
-
-        registry_url = self.get_registry_url(app, task)
+        # See if the registry is willing to give us a URL (it's logged in)
+        registry = self.get_registry(app)
+        if registry:
+            registry_url = registry.url(self.host)
+        else:
+            registry_url = None
         if registry_url is None:
             if fail_silently:
                 return None
@@ -104,6 +100,12 @@ class ImageRepository:
                     remote_name=None,
                     image_tag=image_tag
                 )
+
+        task = Task(
+            "Pulling remote image {}:{}".format(image_name, image_tag),
+            parent=parent_task,
+            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
+        )
 
         remote_name = "{registry_url}/{image_name}".format(
             registry_url=registry_url,
@@ -181,3 +183,87 @@ class ImageRepository:
                 image=image_name,
                 image_tag=image_tag,
             )
+
+    def push_image_version(self, app, image_name, image_tag, parent_task):
+        """
+        Pushes the given image version up to the repository
+        """
+
+        assert isinstance(image_name, str)
+        assert isinstance(image_tag, str)
+
+        # The string "local" has a special meaning which means the most recent
+        # local image of that name, so we skip the remote call/check.
+        if image_tag == "local":
+            raise ValueError("You cannot push the 'local' version")
+
+        # See if the registry is willing to give us a URL (it's logged in)
+        registry = self.get_registry(app)
+        if registry:
+            registry_url = registry.url(self.host)
+        else:
+            registry_url = None
+        if registry_url is None:
+            raise RuntimeError("No registry configured")
+
+        task = Task(
+            "Pushing image {}:{}".format(image_name, image_tag),
+            parent=parent_task,
+            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
+        )
+
+        # Work out the name it needs to be and tag the image as that
+        remote_name = "{registry_url}/{image_name}".format(
+            registry_url=registry_url,
+            image_name=image_name,
+        )
+        self.host.client.tag(
+            image_name + ":" + "latest",
+            remote_name,
+            tag=image_tag,
+            force=True
+        )
+
+        # Push it up
+        stream = self.host.client.push(remote_name, tag=image_tag, stream=True)
+        layer_status = {}
+        current = None
+        total = None
+        for line in stream:
+            if isinstance(line, bytes):
+                line = line.decode("ascii")
+            data = json.loads(line)
+            if 'error' in data:
+                task.finish(status="Failed", status_flavor=Task.FLAVOR_WARNING)
+                raise RuntimeError("Push error: %r" % data['error'])
+            elif 'id' in data:
+                if data['status'].lower() == "pushing":
+                    layer_status[data['id']] = data['progressDetail']
+                elif "complete" in data['status'].lower() and data['id'] in layer_status:
+                    layer_status[data['id']]['current'] = layer_status[data['id']]['total']
+                if layer_status:
+                    statuses = [x for x in layer_status.values()
+                                if "current" in x and "total" in x]
+                    current = sum(x['current'] for x in statuses)
+                    total = sum(x['total'] for x in statuses)
+                if total is not None:
+                    task.update(progress=(current, total))
+        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+
+
+class BasicRegistryHandler:
+    """
+    Handler for basic (normal Docker) image registries
+    """
+
+    def __init__(self, app, data):
+        self.registry_url = data
+
+    def url(self, host):
+        return self.registry_url
+
+    def login(self, host, task):
+        click.echo("Registry does not need a login")
+
+    def logout(self, host, task):
+        click.echo("Registry does not need a login")
