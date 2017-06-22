@@ -47,6 +47,13 @@ class DockerRuntimeError(Exception):
         self.instance = instance
 
 
+class RegistryRequiresLogin(Exception):
+    """
+    Raised by a registry handler when a registry has not been logged in to
+    and so cannot be used.
+    """
+
+
 class ImageNotFoundException(Exception):
     """
     Raised when the image requested does not exist on the docker host being

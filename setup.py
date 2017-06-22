@@ -57,6 +57,7 @@ setup(
         mounts = bay.plugins.mounts:DevModesPlugin
         profile = bay.plugins.profile:ProfilesPlugin
         ps = bay.plugins.ps:PsPlugin
+        registry = bay.plugins.registry:RegistryPlugin
         run = bay.plugins.run:RunPlugin
         ssh_agent = bay.plugins.ssh_agent:SSHAgentPlugin
         tail = bay.plugins.tail:TailPlugin
