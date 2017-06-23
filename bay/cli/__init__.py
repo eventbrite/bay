@@ -33,11 +33,19 @@ class App(object):
     cli = attr.ib()
     plugins = attr.ib(default=attr.Factory(dict), init=False)
 
-    def load_config(self, config_paths):
-        self.config = Config(config_paths)
-        self.hosts = HostManager.from_config(self.config)
-        self.containers = ContainerGraph(self.config["bay"]["home"])
-        self.root_task = RootTask()
+    @classmethod
+    def get_default_containers(cls):
+        if not hasattr(cls, "containers"):
+            cls.load_config()
+        return cls.containers
+
+    @classmethod
+    def load_config(cls):
+        default_config_paths = ()
+        cls.config = Config(default_config_paths)
+        cls.hosts = HostManager.from_config(cls.config)
+        cls.containers = ContainerGraph(cls.config["bay"]["home"])
+        cls.root_task = RootTask()
 
     def load_plugins(self):
         """
@@ -196,15 +204,14 @@ class AppGroup(SpellcheckableAliasableGroup):
 
 
 @click.command(cls=AppGroup, app_class=App)
-@click.option('-c', '--config', multiple=True)
 @click.version_option()
 @click.pass_obj
-def cli(app, config):
+def cli(app):
     """
     Bay, the Docker-based development environment management tool.
     """
     # Load config based on CLI parameters
-    app.load_config(config)
+    app.load_config()
     app.load_profiles()
 
 
