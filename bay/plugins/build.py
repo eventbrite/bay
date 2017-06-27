@@ -10,6 +10,7 @@ from ..cli.tasks import Task
 from ..docker.build import Builder
 from ..exceptions import BuildFailureError, ImagePullFailure
 from ..utils.sorting import dependency_sort
+from ..constants import PluginHook
 
 
 @attr.s
@@ -131,6 +132,8 @@ def build(app, containers, host, cache, recursive, verbose):
             order=CYAN(", ".join([container.name for container in ancestors_to_build])),
         ),
     )
+
+    app.run_hooks(PluginHook.PRE_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
 
     for container in ancestors_to_build:
         image_builder = Builder(
