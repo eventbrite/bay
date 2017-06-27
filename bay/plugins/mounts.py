@@ -25,12 +25,14 @@ class DevModesPlugin(BasePlugin):
 
 
 @click.command()
+@click.option("--profile-only", "-p", default=False, is_flag=True)
 @click.pass_obj
-def mounts(app):
+def mounts(app, profile_only):
     """
     List all current dev mounts.
     """
     dev_mounts = defaultdict(dict)
+
     for container in app.containers:
         unmounted_devmodes = set(container.devmodes.keys())
         runtime_options = app.containers.options(container)
@@ -38,13 +40,24 @@ def mounts(app):
             devmodes = app.containers.options(container).get('devmodes')
             dev_mounts[container.name]['mounted'] = sorted(devmodes)
             dev_mounts[container.name]['unmounted'] = unmounted_devmodes.difference(devmodes)
+        elif not profile_only:
+            # only containers in profile have runtime_options set, so if profile_only
+            # then skip ones with no options altogether regrdless is the have devmodes
+            dev_mounts[container.name]['mounted'] = []
+            dev_mounts[container.name]['unmounted'] = unmounted_devmodes
 
     for name, devmodes in dev_mounts.items():
-        click.echo('{}: \nMounted: {}\nUnmounted: {}'.format(
-            CYAN(name),
-            GREEN(', '.join(sorted(devmodes['mounted']))),
-            PURPLE(', '.join(sorted(devmodes['unmounted']))),
-        ))
+        if devmodes['mounted']:
+            click.echo('{}: \nMounted: {}\nUnmounted: {}'.format(
+                CYAN(name),
+                GREEN(', '.join(sorted(devmodes['mounted']))),
+                PURPLE(', '.join(sorted(devmodes['unmounted']))),
+            ))
+        elif devmodes['unmounted']:
+            click.echo('{}: \nUnmounted: {}'.format(
+                CYAN(name),
+                PURPLE(', '.join(sorted(devmodes['unmounted']))),
+            ))
 
 
 @click.command()
