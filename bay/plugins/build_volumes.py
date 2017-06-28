@@ -134,7 +134,7 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_task.update(status="Removed {}. Recreating".format(provides_volume))
             except NotFound:
                 volume_task.update(status="Volume {} not found. Creating")
-            volume = host.client.create_volume(provides_volume, labels={'build_id': image_details['Id']})
+            host.client.create_volume(provides_volume, labels={'build_id': image_details['Id']})
 
             # Configure the container
             volume_mountpoints = ["/volume/"]
