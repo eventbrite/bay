@@ -98,13 +98,15 @@ class BuildVolumesPlugin(BasePlugin):
         provides_volume = container.extra_data.get("provides-volume", None)
 
         def should_extract_volume():
+            if not provides_volume:
+                return False
             try:
                 volume_details = host.client.inspect_volume(provides_volume)
             except NotFound:
                 return True
             return volume_details.get('Labels', {}).get('build_id') != image_details['Id']
 
-        if provides_volume and should_extract_volume():
+        if should_extract_volume():
             # Stop all containers that have the volume mounted
             formation = FormationIntrospector(host, self.app.containers).introspect()
             instances_to_remove = []
