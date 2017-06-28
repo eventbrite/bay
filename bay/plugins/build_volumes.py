@@ -95,16 +95,16 @@ class BuildVolumesPlugin(BasePlugin):
         to recreate the volume if the image's ID (hash) has changed.
         """
         image_details = host.client.inspect_image(container.image_name)
+        provides_volume = container.extra_data.get("provides-volume", None)
 
-        def should_extract_volume(volume_name):
+        def should_extract_volume():
             try:
-                volume_details = host.client.inspect_volume(volume_name)
+                volume_details = host.client.inspect_volume(provides_volume)
             except NotFound:
                 return True
             return volume_details.get('Labels', {}).get('build_id') != image_details['Id']
 
-        provides_volume = container.extra_data.get("provides-volume", None)
-        if provides_volume and should_extract_volume(provides_volume):
+        if provides_volume and should_extract_volume():
             # Stop all containers that have the volume mounted
             formation = FormationIntrospector(host, self.app.containers).introspect()
             instances_to_remove = []
