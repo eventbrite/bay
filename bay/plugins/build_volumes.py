@@ -91,8 +91,8 @@ class BuildVolumesPlugin(BasePlugin):
         """
         Intercepts builds of volume-providing containers and unpacks them.
 
-        Volumes are stored with the SHA1 of the corresponding volume-providing image. This will only run the container
-        to recreate the volume if the image's hash has changed.
+        Volumes are stored with the ID of the corresponding volume-providing image. This will only run the container
+        to recreate the volume if the image's ID (hash) has changed.
         """
         image_details = host.client.inspect_image(container.image_name)
 
@@ -101,27 +101,29 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_details = host.client.inspect_volume(volume_name)
             except NotFound:
                 return True
-            return volume_details.get('Labels', {}).get('build_sha') != image_details['Id']
+            return volume_details.get('Labels', {}).get('build_id') != image_details['Id']
 
         provides_volume = container.extra_data.get("provides-volume", None)
         if provides_volume and should_extract_volume(provides_volume):
             # Stop all containers that have the volume mounted
             formation = FormationIntrospector(host, self.app.containers).introspect()
-            instances_to_stop = []
+            instances_to_remove = []
             for instance in list(formation):
                 # If there are no names, then we remove everything
                 if provides_volume in instance.container.named_volumes.values():
                     # Make sure that it was not removed already as a dependent
+                    instances_to_remove.append(instance)
                     if instance.formation:
-                        instances_to_stop.append(instance)
-            if instances_to_stop:
-                for instance in instances_to_stop:
-                    formation.remove_instance(instance)
-                stop_task = Task("Stopping containers: {}".format([i.name for i in instances_to_stop]), parent=task)
+                        formation.remove_instance(instance)
+            if instances_to_remove:
+                stop_task = Task("Stopping containers", parent=task)
                 FormationRunner(self.app, host, formation, stop_task).run()
-                for instance in instances_to_stop:
-                    host.client.remove_container(instance.name)
                 stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+                remove_task = Task("Removing containers", parent=task)
+                for instance in instances_to_remove:
+                    host.client.remove_container(instance.name)
+                    remove_task.update(status="Removed {}".format(instance.name))
+                remove_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
             volume_task = Task("(Re)creating volume {}".format(provides_volume), parent=task)
             # Recreate the volume with the new image ID
@@ -130,7 +132,7 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_task.update(status="Removed {}. Recreating".format(provides_volume))
             except NotFound:
                 volume_task.update(status="Volume {} not found. Creating")
-            volume = host.client.create_volume(provides_volume, labels={'build_sha': image_details['Id']})
+            volume = host.client.create_volume(provides_volume, labels={'build_id': image_details['Id']})
 
             # Configure the container
             volume_mountpoints = ["/volume/"]
