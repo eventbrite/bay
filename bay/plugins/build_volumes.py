@@ -71,28 +71,28 @@ class BuildVolumesPlugin(BasePlugin):
         volumes_to_build = set()
         for container in containers:
             for volume in container.named_volumes.values():
-                volumes_to_build.add(volume)
+                if volume in providers:
+                    volumes_to_build.add(volume)
         for name in volumes_to_build:
-            if name in providers:
-                Builder(
-                    host,
-                    providers[name],
+            Builder(
+                host,
+                providers[name],
+                self.app,
+                parent_task=task,
+                logfile_name=self.app.config.get_path(
+                    'bay',
+                    'build_log_path',
                     self.app,
-                    parent_task=task,
-                    logfile_name=self.app.config.get_path(
-                        'bay',
-                        'build_log_path',
-                        self.app,
-                    ),
-                    verbose=True,
-                ).build()
+                ),
+                verbose=True,
+            ).build()
 
     def post_build(self, host, container, task):
         """
         Intercepts builds of volume-providing containers and unpacks them.
 
         Volumes are stored with the ID of the corresponding volume-providing image. This will only run the container
-        to recreate the volume if the image's ID (hash) has changed.
+        to recreate the volume if the image"s ID (hash) has changed.
         """
         image_details = host.client.inspect_image(container.image_name)
         provides_volume = container.extra_data.get("provides-volume", None)
@@ -104,17 +104,17 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_details = host.client.inspect_volume(provides_volume)
             except NotFound:
                 return True
-            return volume_details.get('Labels', {}).get('build_id') != image_details['Id']
+            return volume_details.get("Labels", {}).get("build_id") != image_details["Id"]
 
         if should_extract_volume():
             # Stop all containers that have the volume mounted
             formation = FormationIntrospector(host, self.app.containers).introspect()
+            # Keep track of instances to remove after they are stopped
             instances_to_remove = []
             for instance in list(formation):
-                # If there are no names, then we remove everything
                 if provides_volume in instance.container.named_volumes.values():
-                    # Make sure that it was not removed already as a dependent
                     instances_to_remove.append(instance)
+                    # Make sure that it was not removed from the formation already as a dependent
                     if instance.formation:
                         formation.remove_instance(instance)
             if instances_to_remove:
@@ -134,7 +134,7 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_task.update(status="Removed {}. Recreating".format(provides_volume))
             except NotFound:
                 volume_task.update(status="Volume {} not found. Creating")
-            host.client.create_volume(provides_volume, labels={'build_id': image_details['Id']})
+            host.client.create_volume(provides_volume, labels={"build_id": image_details["Id"]})
 
             # Configure the container
             volume_mountpoints = ["/volume/"]
@@ -150,6 +150,6 @@ class BuildVolumesPlugin(BasePlugin):
             # Start it in the foreground so we wait till it exits (detach=False above)
             volume_task.update(status="Extracting")
             host.client.start(container_pointer)
-            host.client.wait(container_pointer['Id'])
-            host.client.remove_container(container_pointer['Id'])
+            host.client.wait(container_pointer["Id"])
+            host.client.remove_container(container_pointer["Id"])
             volume_task.update(status="Done", status_flavor=Task.FLAVOR_GOOD)
