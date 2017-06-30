@@ -110,14 +110,9 @@ class BuildVolumesPlugin(BasePlugin):
             # Stop all containers that have the volume mounted
             formation = FormationIntrospector(host, self.app.containers).introspect()
             # Keep track of instances to remove after they are stopped
-            instances_to_remove = []
-            for instance in list(formation):
-                if provides_volume in instance.container.named_volumes.values():
-                    instances_to_remove.append(instance)
-                    # Make sure that it was not removed from the formation already as a dependent
-                    if instance.formation:
-                        formation.remove_instance(instance)
+            instances_to_remove = formation.get_instances_using_volume(provides_volume)
             if instances_to_remove:
+                formation.remove_instances(instances_to_remove)
                 stop_task = Task("Stopping containers", parent=task)
                 FormationRunner(self.app, host, formation, stop_task).run()
                 stop_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
