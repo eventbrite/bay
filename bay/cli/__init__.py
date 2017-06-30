@@ -5,9 +5,10 @@ import sys
 import os
 import traceback
 import attr
+import requests
 
 from .alias_group import SpellcheckableAliasableGroup
-from .colors import PURPLE, RED
+from .colors import PURPLE, RED, YELLOW
 from .tasks import RootTask
 from ..config import Config
 from ..constants import PluginHook
@@ -200,6 +201,9 @@ class AppGroup(SpellcheckableAliasableGroup):
             # Run the failure hooks, printing a default error if nothing is hooked in
             if not self.app.run_hooks(PluginHook.DOCKER_FAILURE):
                 click.echo(RED(str(e)))
+            sys.exit(1)
+        except requests.exceptions.ReadTimeout as e:
+            click.echo(YELLOW("Transient Docker connection error, please try again."))
             sys.exit(1)
 
 
