@@ -2,6 +2,7 @@ import attr
 import click
 from docker.errors import NotFound, APIError
 from io import BytesIO
+import re
 import tarfile
 
 from .base import BasePlugin
@@ -71,13 +72,19 @@ def destroy(app, host, name):
     from .gc import GarbageCollector
     GarbageCollector(host).gc_all(task)
     # Remove the volume
-    try:
-        host.client.remove_volume(name)
-    except NotFound:
-        task.add_extra_info("There is no volume called {}".format(name))
-        task.finish(status="Not found", status_flavor=Task.FLAVOR_BAD)
+    formation = FormationIntrospector(host, app.containers).introspect()
+    instance_conflicts = [instance.container.name for instance in formation.get_instances_using_volume(name)]
+    if instance_conflicts:
+        task.finish(status="Volume {} is in use by container(s): {}".format(
+            name, ",".join(instance_conflicts)), status_flavor=Task.FLAVOR_BAD)
     else:
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        try:
+            host.client.remove_volume(name)
+        except NotFound:
+            task.add_extra_info("There is no volume called {}".format(name))
+            task.finish(status="Not found", status_flavor=Task.FLAVOR_BAD)
+        else:
+            task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
 
 @volume.command()
