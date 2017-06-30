@@ -2,7 +2,6 @@ import attr
 import click
 from docker.errors import NotFound, APIError
 from io import BytesIO
-import re
 import tarfile
 
 from .base import BasePlugin
