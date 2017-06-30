@@ -62,6 +62,12 @@ class ContainerFormation:
         del self.container_instances[instance.name]
         instance.formation = None
 
+    def remove_instances(self, instances):
+        for instance in instances:
+            # Make sure that it was not removed from the formation already as a dependent
+            if instance.formation:
+                self.remove_instance(instance)
+
     def add_container(self, container, host):
         """
         Adds a container to run inside the formation along with all dependencies.
@@ -131,6 +137,12 @@ class ContainerFormation:
                 return instance
 
         raise ValueError("Could not find a running instance of {}".format(container_name))
+
+    def get_instances_using_volume(self, name):
+        """
+        Return a list of instances that require the named volume.
+        """
+        return [instance for instance in self if name in instance.container.named_volumes.values()]
 
     def __getitem__(self, key):
         return self.container_instances[key]
