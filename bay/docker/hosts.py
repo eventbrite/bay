@@ -132,7 +132,7 @@ class Host(object):
             return docker.APIClient(
                 base_url=self.url,
                 version="auto",
-                timeout=10,
+                timeout=42,
                 tls=tls,
             )
         except docker.errors.DockerException:
