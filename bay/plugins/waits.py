@@ -112,16 +112,25 @@ class HttpWait(TcpWait):
 
     connection_class = http.client.HTTPConnection
 
+    def _ready_request(self, conn):
+        while True:
+            try:
+                conn.request(self.method, self.path, headers=self.headers)
+                response = conn.getresponse()
+                if response.status in self.expected_codes:
+                    return True
+                return False
+            except http.client.RemoteDisconnected as e:
+                conn.connect()
+                continue
+
     def ready(self):
         addr, port = self.target()
         conn = self.connection_class(addr, port, timeout=self.timeout)
         # Run wait
         try:
-            conn.request(self.method, self.path, headers=self.headers)
-            response = conn.getresponse()
-            if response.status in self.expected_codes:
-                return True
-        except:
+            return self._ready_request(conn)
+        except Exception as e:
             return False
         finally:
             conn.close()
