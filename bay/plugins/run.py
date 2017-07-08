@@ -80,9 +80,11 @@ def run(app, containers, host, tail):
 @click.command()
 @click.argument("container", type=ContainerType())
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.option("--running", "-r", is_flag=True)
+@click.option("--not-running", "-n", is_flag=True)
 @click.argument("command", nargs=-1, default=None)
 @click.pass_obj
-def shell(app, container, host, command):
+def shell(app, container, host, running, not_running, command):
     """
     Runs a single container with foreground enabled and overridden to use bash.
     """
@@ -93,19 +95,26 @@ def shell(app, container, host, command):
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
 
-    # See if the container is running
-    for instance in formation:
-        if instance.container == container:
-            # Work out anything to put before the shell (e.g. ENV)
-            pre_args = []
-            click.echo(BOLD("Container is already running. Running in attach mode."))
-            if os.environ.get("TERM", None):
-                pre_args = ["env", "TERM=%s" % os.environ['TERM']]
-            # Launch into an attached shell
-            status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + shell)
-            sys.exit(status_code)
+    if not not_running:
+        # See if the container is running
+        for instance in formation:
+            if instance.container == container:
+                # Work out anything to put before the shell (e.g. ENV)
+                pre_args = []
+                click.echo(BOLD("Container is already running. Running in attach mode."))
+                if os.environ.get("TERM", None):
+                    pre_args = ["env", "TERM=%s" % os.environ['TERM']]
+                # Launch into an attached shell
+                status_code = subprocess.call(["docker", "exec", "-it", instance.name] + pre_args + shell)
+                sys.exit(status_code)
 
-    click.echo(BOLD("Container is not running. Running in shell mode."))
+    if running:
+        click.echo(RED("Container {name} is not running. Try `bay run {name}`.".format(
+            name=container.name,
+        )))
+        sys.exit(1)
+    else:
+        click.echo(BOLD("Container is not running. Running in shell mode."))
     # Make a Formation with that container launched with bash in foreground
     try:
         instance = formation.add_container(container, host)
