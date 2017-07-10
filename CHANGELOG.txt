@@ -1,3 +1,17 @@
+2.3.0 (2017-07-10)
+------------------
+
+- Change registry interface to have separate login, add push command
+- Pre-build volume providers when building containers
+- Add warnings about old link formats
+- Fix towline reading so that it correctly looks for boot status
+- Autocomplete working
+- Make `volume destroy` fail with a nice error message if instances are using the volume
+- `bay mounts` now lists containers that have devmodes, but aren't in the current profile
+- Increased DockerAPI timeout to 42s, catching ReadTimeout exception
+- Make HttpWait.ready() immediately retry on RemoteDisconnected exception
+
+
 2.2.8 (2017-06-15)
 ------------------
 
