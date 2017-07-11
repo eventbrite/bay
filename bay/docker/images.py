@@ -104,7 +104,7 @@ class ImageRepository:
         task = Task(
             "Pulling remote image {}:{}".format(image_name, image_tag),
             parent=parent_task,
-            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
+            progress_formatter=lambda x: "{} MB".format(x // (1024 ** 2)),
         )
 
         remote_name = "{registry_url}/{image_name}".format(
@@ -209,7 +209,7 @@ class ImageRepository:
         task = Task(
             "Pushing image {}:{}".format(image_name, image_tag),
             parent=parent_task,
-            progress_formatter=lambda x: "{} MB".format(x // (1024**2)),
+            progress_formatter=lambda x: "{} MB".format(x // (1024 ** 2)),
         )
 
         # Work out the name it needs to be and tag the image as that
