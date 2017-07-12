@@ -114,7 +114,7 @@ def copy_to_docker(app, host, src, container_name, volume_name):
         host.client.put_archive(container=instance.name,
                                 path=path,
                                 data=tar_stream)
-    except APIError as e:
+    except APIError:
         task.finish(status="Failed to copy", status_flavor=Task.FLAVOR_BAD)
 
     else:

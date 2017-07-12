@@ -1,5 +1,6 @@
 import attr
 import http.client
+import ssl
 import socket
 import time
 from docker.errors import NotFound
@@ -57,9 +58,13 @@ class WaitsPlugin(BasePlugin):
                 )
             # Check the waits
             for wait_instance in list(wait_instances):
-                if wait_instance.ready():
-                    wait_instance.task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
-                    wait_instances.remove(wait_instance)
+                try:
+                    if wait_instance.ready():
+                        wait_instance.task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+                        wait_instances.remove(wait_instance)
+                except Exception as e:
+                    task.update(status="Failed", status_flavor=Task.FLAVOR_BAD)
+                    raise DockerRuntimeError("Failed while waiting for {}:\n{}".format(instance.container.name, e))
             time.sleep(1)
 
 
@@ -112,6 +117,10 @@ class HttpWait(TcpWait):
 
     connection_class = http.client.HTTPConnection
 
+    def _get_connection(self, **kwargs):
+        addr, port = self.target()
+        return self.connection_class(addr, port, timeout=self.timeout, **kwargs)
+
     def _ready_request(self, conn):
         while True:
             try:
@@ -120,17 +129,16 @@ class HttpWait(TcpWait):
                 if response.status in self.expected_codes:
                     return True
                 return False
-            except http.client.RemoteDisconnected as e:
+            except http.client.RemoteDisconnected:
                 conn.connect()
                 continue
 
     def ready(self):
-        addr, port = self.target()
-        conn = self.connection_class(addr, port, timeout=self.timeout)
+        conn = self._get_connection()
         # Run wait
         try:
             return self._ready_request(conn)
-        except Exception as e:
+        except Exception:
             return False
         finally:
             conn.close()
@@ -139,11 +147,40 @@ class HttpWait(TcpWait):
         return "HTTP on port {}".format(self.port)
 
 
+@attr.s
 class HttpsWait(HttpWait):
     """
-    HTTPS variant of the HTTP wait
+    HTTPS variant of the HTTP wait.
+
+    If verify_cert is True, this will let the underlying SSL library attempt to verify the CA
+    cert provided by the server. This means the SSL library must be able to find the cert.
+    Usually this is accomplished by setting the SSL_CERT_FILE environment variable.
     """
+    verify_cert = attr.ib(default=False)
+
     connection_class = http.client.HTTPSConnection
+
+    def _get_connection(self, **kwargs):
+        context = ssl.create_default_context()
+        # We are going to be making a request to an IP address, so we cannot rely on the cert
+        # having the correct hostname.
+        context.check_hostname = False
+        if not self.verify_cert:
+            context.verify_mode = ssl.CERT_NONE
+        return super(HttpsWait, self)._get_connection(context=context)
+
+    def ready(self):
+        conn = self._get_connection()
+        try:
+            return self._ready_request(conn)
+        except (ssl.SSLError, ssl.CertificateError):
+            # If there is a problem with the cert or SSL connection, error out immediately
+            self.task.update(status="SSL error")
+            raise
+        except Exception:
+            return False
+        finally:
+            conn.close()
 
     def description(self):
         return "HTTPS on port {}".format(self.port)
