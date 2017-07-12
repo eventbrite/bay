@@ -104,7 +104,8 @@ class BuildVolumesPlugin(BasePlugin):
                 volume_details = host.client.inspect_volume(provides_volume)
             except NotFound:
                 return True
-            return volume_details.get("Labels", {}).get("build_id") != image_details["Id"]
+            labels = volume_details.get("Labels") or {}
+            return labels.get("build_id") != image_details["Id"]
 
         if should_extract_volume():
             # Stop all containers that have the volume mounted
