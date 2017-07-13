@@ -2,6 +2,7 @@ import attr
 from docker.errors import NotFound
 
 from .base import BasePlugin
+from .gc import GarbageCollector
 from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..docker.build import Builder
@@ -122,6 +123,9 @@ class BuildVolumesPlugin(BasePlugin):
                     host.client.remove_container(instance.name)
                     remove_task.update(status="Removed {}".format(instance.name))
                 remove_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+
+            # Prune any orphan stopped containers, so we don't get conflict errors
+            GarbageCollector(host).gc_containers(task)
 
             volume_task = Task("(Re)creating volume {}".format(provides_volume), parent=task)
             # Recreate the volume with the new image ID
