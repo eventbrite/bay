@@ -1,3 +1,8 @@
+2.3.2 (2017-07-12)
+------------------
+- Prune containers before trying to remove volumes
+
+
 2.3.1 (2017-07-12)
 ------------------
 - Fix exception when trying to rebuild a volume that was built with an old version of Bay
