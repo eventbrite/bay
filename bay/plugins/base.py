@@ -38,7 +38,7 @@ class BasePlugin(object, metaclass=PluginMetaclass):
     app = attr.ib()
 
     # Simple plugin dependency checking - any strings in requires must be
-    # in exactly one other loaded plugin in provides.
+    # in exactly one other loaded plugin's provides.
     provides = []
     requires = []
 

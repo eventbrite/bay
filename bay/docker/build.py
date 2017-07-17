@@ -11,6 +11,7 @@ from docker.utils import exclude_paths
 
 from ..cli.colors import CYAN, remove_ansi
 from ..cli.tasks import Task
+from ..constants import PluginHook
 
 from ..exceptions import BuildFailureError, FailedCommandException
 
@@ -80,7 +81,7 @@ class Builder:
         progress = 0
         start_time = datetime.datetime.now().replace(microsecond=0)
 
-        self.app.run_hooks('pre-build', host=self.host, container=self.container, task=self.task)
+        self.app.run_hooks(PluginHook.PRE_BUILD, host=self.host, container=self.container, task=self.task)
 
         try:
             # Prep normalised context
@@ -132,7 +133,7 @@ class Builder:
 
         else:
             # Run post-build hooks
-            self.app.run_hooks('post-build', host=self.host, container=self.container, task=self.task)
+            self.app.run_hooks(PluginHook.POST_BUILD, host=self.host, container=self.container, task=self.task)
 
             # Print out end-of-build message
             end_time = datetime.datetime.now().replace(microsecond=0)

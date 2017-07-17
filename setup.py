@@ -60,6 +60,7 @@ setup(
         registry = bay.plugins.registry:RegistryPlugin
         run = bay.plugins.run:RunPlugin
         ssh_agent = bay.plugins.ssh_agent:SSHAgentPlugin
+        system = bay.plugins.system:SystemContainerBuildPlugin
         tail = bay.plugins.tail:TailPlugin
         volume = bay.plugins.volume:VolumePlugin
         waits = bay.plugins.waits:WaitsPlugin
