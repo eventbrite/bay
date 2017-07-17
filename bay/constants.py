@@ -4,6 +4,7 @@ class PluginHook:
     PRE_START = "pre-start"
     POST_START = "post-start"
     PRE_GROUP_BUILD = "pre-group-build"
+    POST_GROUP_BUILD = "post-group-build"
     DOCKER_FAILURE = "docker-fail"
 
     valid_hooks = frozenset([
@@ -12,5 +13,6 @@ class PluginHook:
         PRE_START,
         POST_START,
         PRE_GROUP_BUILD,
+        POST_GROUP_BUILD,
         DOCKER_FAILURE,
     ])

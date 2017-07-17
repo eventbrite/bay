@@ -53,7 +53,8 @@ def build(app, containers, host, cache, recursive, verbose):
     for container in containers:
         if container is ContainerType.Profile:
             for con in app.containers:
-                if app.containers.options(con).get('in_profile'):
+                # When building the profile, rebuild system containers too
+                if app.containers.options(con).get('in_profile') or con.system:
                     containers_to_pull.append(con)
         else:
             containers_to_build.append(container)
@@ -158,6 +159,8 @@ def build(app, containers, host, cache, recursive, verbose):
                 click.echo("  " + remove_ansi(line).rstrip())
             click.echo("See full build log at {log}".format(log=click.format_filename(logfile_name)), err=True)
             sys.exit(1)
+
+    app.run_hooks(PluginHook.POST_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
 
     task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
