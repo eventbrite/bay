@@ -46,7 +46,6 @@ setup(
         boot = bay.plugins.boot:BootPlugin
         build = bay.plugins.build:BuildPlugin
         build_scripts = bay.plugins.build_scripts:BuildScriptsPlugin
-        build_volumes = bay.plugins.build_volumes:BuildVolumesPlugin
         container = bay.plugins.container:ContainerPlugin
         doctor = bay.plugins.doctor:DoctorPlugin
         gc = bay.plugins.gc:GcPlugin
