@@ -20,7 +20,6 @@ class BuildVolumesPlugin(BasePlugin):
 
     def load(self):
         self.add_hook(PluginHook.PRE_START, self.pre_start)
-        self.add_hook(PluginHook.PRE_GROUP_BUILD, self.pre_group_build)
         self.add_hook(PluginHook.POST_BUILD, self.post_build)
 
     def _get_providers(self):
@@ -63,30 +62,6 @@ class BuildVolumesPlugin(BasePlugin):
                         ),
                         verbose=True,
                     ).build()
-
-    def pre_group_build(self, host, containers, task):
-        """
-        Build volume-providing containers for all required volumes.
-        """
-        providers = self._get_providers()
-        volumes_to_build = set()
-        for container in containers:
-            for volume in container.named_volumes.values():
-                if volume in providers:
-                    volumes_to_build.add(volume)
-        for name in volumes_to_build:
-            Builder(
-                host,
-                providers[name],
-                self.app,
-                parent_task=task,
-                logfile_name=self.app.config.get_path(
-                    'bay',
-                    'build_log_path',
-                    self.app,
-                ),
-                verbose=True,
-            ).build()
 
     def post_build(self, host, container, task):
         """

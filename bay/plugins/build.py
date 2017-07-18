@@ -33,7 +33,6 @@ class BuildPlugin(BasePlugin):
 @click.option('--recursive/--one', '-r/-1', default=True)
 @click.option('--verbose/--quiet', '-v/-q', default=True)
 # TODO: Add a proper requires_docker check
-# TODO: Add build profile
 @click.pass_obj
 def build(app, containers, host, cache, recursive, verbose):
     """
@@ -48,6 +47,12 @@ def build(app, containers, host, cache, recursive, verbose):
     task = Task("Building", parent=app.root_task)
     start_time = datetime.datetime.now().replace(microsecond=0)
 
+    providers = {}
+    for container in app.containers:
+        provides_volume = container.extra_data.get("provides-volume", None)
+        if provides_volume:
+            providers[provides_volume] = container
+
     # Go through the containers, expanding "ContainerType.Profile" into a list
     # of default boot containers in the profile.
     for container in containers:
@@ -56,8 +61,15 @@ def build(app, containers, host, cache, recursive, verbose):
                 # When building the profile, rebuild system containers too
                 if app.containers.options(con).get('in_profile') or con.system:
                     containers_to_pull.append(con)
+                    # Build any volumes that are required by the containers
+                    for volume in con.named_volumes.values():
+                        if volume in providers:
+                            containers_to_pull.append(providers[volume])
         else:
             containers_to_build.append(container)
+            for volume in container.named_volumes.values():
+                if volume in providers:
+                    containers_to_build.append(providers[volume])
 
     # Expand containers_to_pull (At this point just the default boot containers
     # from profile) to include runtime dependencies.
