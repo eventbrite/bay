@@ -1,3 +1,8 @@
+2.5.0 (2017-07-18)
+------------------
+- Build ancestors of volume providing containers
+
+
 2.4.0 (2017-07-17)
 ------------------
 - Automatically rebuild system containers when building profiles, and restart them if they have changed
