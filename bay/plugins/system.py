@@ -16,7 +16,10 @@ class SystemContainerBuildPlugin(BasePlugin):
         for container in containers:
             if container.system:
                 # If the running instance is based on an outdated image, restart it
-                instance = formation.get_container_instance(container.name)
+                try:
+                    instance = formation.get_container_instance(container.name)
+                except ValueError:
+                    continue
                 image_details = host.client.inspect_image(container.image_name)
                 if instance and image_details and image_details["Id"] != instance.image_id:
                     containers_to_restart.add(container)
