@@ -60,18 +60,31 @@ class BuildPlugin(BasePlugin):
                     host.client.inspect_volume(name)
                 except NotFound:
                     # Aha! Build it!
-                    Builder(
-                        host,
-                        providers[name],
-                        self.app,
-                        parent_task=task,
-                        logfile_name=self.app.config.get_path(
-                            'bay',
-                            'build_log_path',
+                    try:
+                        logfile_name = self.app.config.get_path(
+                                'bay',
+                                'build_log_path',
+                                self.app,
+                            )
+                        Builder(
+                            host,
+                            providers[name],
                             self.app,
-                        ),
-                        verbose=True,
-                    ).build()
+                            parent_task=task,
+                            logfile_name=logfile_name,
+                            verbose=True,
+                        ).build()
+                    except BuildFailureError:
+                        click.echo(RED("Build failed! Last 15 lines of log:"))
+                        # TODO: More efficient tailing
+                        lines = []
+                        with open(logfile_name, "r") as fh:
+                            for line in fh:
+                                lines = lines[-14:] + [line]
+                        for line in lines:
+                            click.echo("  " + remove_ansi(line).rstrip())
+                        click.echo("See full build log at {log}".format(log=click.format_filename(logfile_name)), err=True)
+                        sys.exit(1)
 
     def post_build(self, host, container, task):
         """
