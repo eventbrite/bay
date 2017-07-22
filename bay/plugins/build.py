@@ -62,10 +62,10 @@ class BuildPlugin(BasePlugin):
                     # Aha! Build it!
                     try:
                         logfile_name = self.app.config.get_path(
-                                'bay',
-                                'build_log_path',
-                                self.app,
-                            )
+                            'bay',
+                            'build_log_path',
+                            self.app,
+                        )
                         Builder(
                             host,
                             providers[name],
@@ -83,7 +83,10 @@ class BuildPlugin(BasePlugin):
                                 lines = lines[-14:] + [line]
                         for line in lines:
                             click.echo("  " + remove_ansi(line).rstrip())
-                        click.echo("See full build log at {log}".format(log=click.format_filename(logfile_name)), err=True)
+                        click.echo("See full build log at {log}".format(
+                            log=click.format_filename(logfile_name)),
+                            err=True
+                        )
                         sys.exit(1)
 
     def post_build(self, host, container, task):
