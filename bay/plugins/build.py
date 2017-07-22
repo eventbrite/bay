@@ -25,6 +25,20 @@ def _get_providers(app):
             providers[provides_volume] = container
     return providers
 
+def _print_last_lines_and_die(logfile_name)
+    click.echo(RED("Build failed! Last 15 lines of log:"))
+    # TODO: More efficient tailing
+    lines = []
+    with open(logfile_name, "r") as fh:
+        for line in fh:
+            lines = lines[-14:] + [line]
+    for line in lines:
+        click.echo("  " + remove_ansi(line).rstrip())
+    click.echo("See full build log at {log}".format(
+        log=click.format_filename(logfile_name)),
+        err=True
+    )
+    sys.exit(1)
 
 @attr.s
 class BuildPlugin(BasePlugin):
@@ -75,19 +89,7 @@ class BuildPlugin(BasePlugin):
                             verbose=True,
                         ).build()
                     except BuildFailureError:
-                        click.echo(RED("Build failed! Last 15 lines of log:"))
-                        # TODO: More efficient tailing
-                        lines = []
-                        with open(logfile_name, "r") as fh:
-                            for line in fh:
-                                lines = lines[-14:] + [line]
-                        for line in lines:
-                            click.echo("  " + remove_ansi(line).rstrip())
-                        click.echo("See full build log at {log}".format(
-                            log=click.format_filename(logfile_name)),
-                            err=True
-                        )
-                        sys.exit(1)
+                        _print_last_lines_and_die(logfile_name)
 
     def post_build(self, host, container, task):
         """
@@ -287,16 +289,7 @@ def build(app, containers, host, cache, recursive, verbose):
         try:
             image_builder.build()
         except BuildFailureError:
-            click.echo(RED("Build failed! Last 15 lines of log:"))
-            # TODO: More efficient tailing
-            lines = []
-            with open(logfile_name, "r") as fh:
-                for line in fh:
-                    lines = lines[-14:] + [line]
-            for line in lines:
-                click.echo("  " + remove_ansi(line).rstrip())
-            click.echo("See full build log at {log}".format(log=click.format_filename(logfile_name)), err=True)
-            sys.exit(1)
+            _print_last_lines_and_die(logfile_name)
 
     app.run_hooks(PluginHook.POST_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
 
