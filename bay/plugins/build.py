@@ -25,7 +25,8 @@ def _get_providers(app):
             providers[provides_volume] = container
     return providers
 
-def _print_last_lines_and_die(logfile_name)
+
+def _print_last_lines_and_die(logfile_name):
     click.echo(RED("Build failed! Last 15 lines of log:"))
     # TODO: More efficient tailing
     lines = []
@@ -39,6 +40,7 @@ def _print_last_lines_and_die(logfile_name)
         err=True
     )
     sys.exit(1)
+
 
 @attr.s
 class BuildPlugin(BasePlugin):
