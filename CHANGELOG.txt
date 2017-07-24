@@ -1,3 +1,8 @@
+2.5.2 (2017-07-24)
+------------------
+- Handling a failure when building dependent volume
+
+
 2.5.1 (2017-07-20)
 ------------------
 - Fix ValueError when building a system container that is not running
