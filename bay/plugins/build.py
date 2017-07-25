@@ -171,10 +171,6 @@ def build(app, containers, host, cache, recursive, verbose):
                 # When building the profile, rebuild system containers too
                 if app.containers.options(con).get('in_profile') or con.system:
                     containers_to_pull.append(con)
-                    # Build any volumes that are required by the containers
-                    for volume in con.named_volumes.values():
-                        if volume in providers:
-                            containers_to_pull.append(providers[volume])
         else:
             containers_to_build.append(container)
             for volume in container.named_volumes.values():
@@ -184,6 +180,17 @@ def build(app, containers, host, cache, recursive, verbose):
     # Expand containers_to_pull (At this point just the default boot containers
     # from profile) to include runtime dependencies.
     containers_to_pull = dependency_sort(containers_to_pull, app.containers.dependencies)
+
+    # Expand containers_to_pull to include volumes that are required by all containers in the
+    # dependency chain.
+    def container_volume_dependencies(container):
+        volume_deps = set()
+        for volume in container.named_volumes.values():
+            if volume in providers:
+                volume_deps.add(providers[volume])
+        return volume_deps
+
+    containers_to_pull = dependency_sort(containers_to_pull, container_volume_dependencies)
 
     # Try pulling each container to pull, and add it to containers_to_build if
     # it fails. If it works, remember we pulled it, so we don't have to pull it
