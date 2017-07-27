@@ -1,3 +1,8 @@
+2.5.3 (2017-07-27)
+------------------
+- Use the dependency solver to build required volumes
+
+
 2.5.2 (2017-07-24)
 ------------------
 - Handling a failure when building dependent volume
