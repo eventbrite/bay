@@ -106,6 +106,7 @@ class ContainerFormation:
             devmodes=devmodes,
             foreground=container.foreground,
             environment=container.environment,
+            mem_limit=container.mem_limit,
         )
         self.add_instance(instance)
         return instance
@@ -178,6 +179,7 @@ class ContainerInstance:
     devmodes = attr.ib(default=attr.Factory(set), repr=False, cmp=False)
     ports = attr.ib(default=attr.Factory(dict), repr=False, cmp=False)
     environment = attr.ib(default=attr.Factory(dict), repr=False, cmp=False)
+    mem_limit = attr.ib(default=0, repr=False, cmp=False)
     command = attr.ib(default=None, repr=False, cmp=False)
     foreground = attr.ib(default=None, repr=False, cmp=False)
     formation = attr.ib(default=None, init=False, repr=False, cmp=False)

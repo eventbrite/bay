@@ -190,10 +190,11 @@ class Container:
         # Build args to pass into the container; right now, these are only settable by plugins.
         self.buildargs = {}
         # Store all extra data so plugins can get to it
+        self.mem_limit = config_data.get("mem_limit", 0)
         self.extra_data = {
             key: value
             for key, value in config_data.items()
-            if key not in ["ports", "build_checks", "devmodes", "foreground", "links", "waits", "volumes", "image_tag"]
+            if key not in ["ports", "build_checks", "devmodes", "foreground", "links", "waits", "volumes", "image_tag", "mem_limit"]
         }
 
     def get_parent_value(self, name, default):

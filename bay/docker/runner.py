@@ -273,6 +273,7 @@ class FormationRunner:
                 volumes=volume_mountpoints,
                 name=instance.name,
                 host_config=self.host.client.create_host_config(
+                    mem_limit=instance.mem_limit,
                     binds=volume_binds,
                     port_bindings=instance.ports,
                     publish_all_ports=True,
