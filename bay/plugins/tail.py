@@ -21,10 +21,11 @@ class TailPlugin(BasePlugin):
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.option('--follow/--no-follow', '-f', default=False)
 @click.argument("container", type=ContainerType())
+@click.argument("lines", default="10")
 @click.pass_obj
-def tail(app, host, container, follow=False):
+def tail(app, host, container, lines, follow=False):
     """
-    Shows logs from a container
+    Shows logs from a container. Optional second argument specifies a number of lines to print, or "all".
     """
     # We don't use formation here as it doesn't include stopped containers;
     # instead, we manually go through the list.
@@ -37,8 +38,14 @@ def tail(app, host, container, follow=False):
         click.echo(RED("Cannot find instance of {} to print logs for.".format(container.name)))
         sys.exit(1)
     # Either stream or just print directly
+    if lines != "all":
+        try:
+            lines = int(lines)
+        except:
+            click.echo(RED("Invalid number of lines: {}".format(lines)))
+            sys.exit(1)
     if follow:
-        for line in host.client.logs(container_name, stream=True):
+        for line in host.client.logs(container_name, tail=lines, stream=True):
             click.echo(line, nl=False)
     else:
-        click.echo(host.client.logs(container_name))
+        click.echo(host.client.logs(container_name, tail=lines))
