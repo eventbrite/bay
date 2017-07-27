@@ -194,7 +194,17 @@ class Container:
         self.extra_data = {
             key: value
             for key, value in config_data.items()
-            if key not in ["ports", "build_checks", "devmodes", "foreground", "links", "waits", "volumes", "image_tag", "mem_limit"]
+            if key not in {
+                "ports",
+                "build_checks",
+                "devmodes",
+                "foreground",
+                "links",
+                "waits",
+                "volumes",
+                "image_tag",
+                "mem_limit",
+            }
         }
 
     def get_parent_value(self, name, default):
