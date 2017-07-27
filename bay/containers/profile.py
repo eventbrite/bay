@@ -50,7 +50,7 @@ class Profile:
         self.description = data.get("description")
         self.version = data.get("min-version")
 
-        for name, details in data.get('containers', {}).items():
+        for name, details in data.get("containers", {}).items():
             if details is None:
                 details = {}
             self.containers[name] = {
@@ -72,6 +72,8 @@ class Profile:
             if "extra_links" in details:
                 warnings.warn("Old-format extra_links detected in {}".format(self.file_path))
                 self.containers[name]["links"]["required"].extend(details["extra_links"])
+            if "mem_limit" in details:
+                self.containers[name]["mem_limit"] = details["mem_limit"]
 
     def dump(self):
         data = {
@@ -80,7 +82,7 @@ class Profile:
         containers = {}
 
         for container_name, container_data in self.containers.items():
-            if container_data and not container_data.get('ephemeral'):
+            if container_data and not container_data.get("ephemeral"):
                 container_details_to_write = {}
                 for k, v in container_data.items():
                     # Only write out links if populated
@@ -105,7 +107,7 @@ class Profile:
             data["containers"] = containers
 
         if self.version:
-            data['min-version'] = self.version
+            data["min-version"] = self.version
 
         return data
 
@@ -134,8 +136,8 @@ class Profile:
             if self.default_boot_compatability:
                 self.graph.set_option(container, "in_profile", True)
             # Set default boot mode
-            if details.get('default_boot') is not None:
-                self.graph.set_option(container, "default_boot", bool(details['default_boot']))
+            if details.get("default_boot") is not None:
+                self.graph.set_option(container, "default_boot", bool(details["default_boot"]))
             else:
                 # TODO: Remove this temporary fix that allows parent profiles
                 # default boot based on just having the container in the profile
@@ -150,21 +152,23 @@ class Profile:
                     try:
                         container.ports[int(a)] = int(b)
                     except TypeError:
-                        raise BadConfigError('Profile contains invalid ports for {}: {}'.format(a, b))
+                        raise BadConfigError("Profile contains invalid ports for {}: {}".format(a, b))
             # Apply any image tag override
             if "image_tag" in details:
-                container.image_tag = details['image_tag']
+                container.image_tag = details["image_tag"]
             # Store environment variables
-            for key, value in details.get('environment', {}).items():
+            for key, value in details.get("environment", {}).items():
                 container.environment[key] = value
+            if "mem_limit" in details:
+                container.mem_limit = details["mem_limit"]
 
     def calculate_links(self, container):
         """
         Works out what links the container should have
         """
         # Check that they are all valid links
-        optional_links = self.containers[container.name]['links']['optional']
-        required_links = self.containers[container.name]['links']['required']
+        optional_links = self.containers[container.name]["links"]["optional"]
+        required_links = self.containers[container.name]["links"]["required"]
         for link_name in optional_links:
             if link_name not in container.links:
                 raise BadConfigError(
