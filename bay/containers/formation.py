@@ -216,6 +216,7 @@ class ContainerInstance:
             devmodes=self.devmodes,
             ports=self.ports,
             environment=self.environment,
+            mem_limit=self.mem_limit,
             command=self.command,
             foreground=self.foreground,
         )
@@ -233,6 +234,7 @@ class ContainerInstance:
             self.devmodes != other.devmodes or
             self.ports != other.ports or
             self.environment != other.environment or
+            self.mem_limit != other.mem_limit or
             self.command != other.command or
             other.foreground or
             self.foreground
