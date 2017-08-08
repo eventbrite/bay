@@ -2,6 +2,8 @@ import attr
 from ..containers.formation import ContainerFormation, ContainerInstance
 from ..exceptions import DockerRuntimeError
 
+import warnings
+
 
 @attr.s
 class FormationIntrospector:
@@ -14,6 +16,9 @@ class FormationIntrospector:
     graph = attr.ib()
     network = attr.ib(default=None)
     formation = attr.ib(init=False)
+
+    class ContainerNotFound(DockerRuntimeError):
+        pass
 
     def __attrs_post_init__(self):
         if self.network is None:
@@ -45,8 +50,11 @@ class FormationIntrospector:
         return self._create_container(details[0])
 
     def add_container(self, container_details):
-        instance = self._create_container(container_details)
-        self.formation.add_instance(instance)
+        try:
+            instance = self._create_container(container_details)
+            self.formation.add_instance(instance)
+        except self.ContainerNotFound as e:
+            warnings.warn(e.args[0])
 
     def _create_container(self, container_name):
         """
@@ -60,8 +68,11 @@ class FormationIntrospector:
             # to work out what container name this was.
             container = self.graph[labels['com.eventbrite.bay.container']]
         except KeyError:
-            raise DockerRuntimeError(
-                "Cannot find local container for running container {}".format(container_name)
+            raise self.ContainerNotFound(
+                (
+                    "Cannot find local container for running container {}. "
+                    "Perhaps its configuration was moved or deleted?"
+                ).format(container_name)
             )
         # Get the image hash
         image = container_details['Image']
