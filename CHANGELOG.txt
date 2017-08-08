@@ -1,3 +1,9 @@
+2.6.1 (2017-08-08)
+------------------
+- Only raise a warning if a running container has no configuration, rather than throwing an exception
+- Raise a more helpful exception when a required link has no corresponding container
+
+
 2.6.0 (2017-07-28)
 ------------------
 - Add mem_limit option to container and profile configurations
