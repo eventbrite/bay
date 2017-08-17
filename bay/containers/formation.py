@@ -143,7 +143,10 @@ class ContainerFormation:
         """
         Return a list of instances that require the named volume.
         """
-        return [instance for instance in self if name in instance.container.named_volumes.values()]
+        return [
+            instance for instance in self if
+            any(name == v.source for v in instance.container.named_volumes.values())
+        ]
 
     def __getitem__(self, key):
         return self.container_instances[key]
