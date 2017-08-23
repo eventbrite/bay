@@ -1,3 +1,8 @@
+2.7.0 (2017-08-23)
+------------------
+- Store a dict of options for volumes instead of just a path
+
+
 2.6.1 (2017-08-08)
 ------------------
 - Only raise a warning if a running container has no configuration, rather than throwing an exception
