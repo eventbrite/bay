@@ -236,29 +236,33 @@ class FormationRunner:
             })
 
             # Work out volumes configuration
-            volume_mode = "rw,cached" if self.host.supports_cached_volumes else "rw"
             volume_mountpoints = []
             volume_binds = {}
-            for mount_path, source in instance.container.bound_volumes.items():
-                if not os.path.isdir(source):
-                    raise DockerRuntimeError(
-                        "Volume mount source directory {} does not exist".format(source)
-                    )
-                volume_mountpoints.append(mount_path)
-                volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
-            for mount_path, source in instance.container.named_volumes.items():
-                volume_mountpoints.append(mount_path)
-                volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
 
+            def add_volume_mount(mount_path, volume):
+                if self.host.supports_cached_volumes:
+                    volume.mode = volume.mode + ",cached"
+                volume_mountpoints.append(mount_path)
+                volume_binds[volume.source] = {"bind": mount_path, "mode": volume.mode}
+
+            for mount_path, volume in instance.container.bound_volumes.items():
+                if os.path.isdir(volume.source):
+                    add_volume_mount(mount_path, volume)
+                elif volume.required:
+                    raise NotFoundException(
+                        "Volume mount source directory {} does not exist".format(volume.source)
+                    )
             # Add any active devmodes
             for mount_name in instance.devmodes:
-                for mount_path, source in instance.container.devmodes[mount_name].items():
-                    volume_mountpoints.append(mount_path)
-                    source = os.path.abspath(source)
-                    if os.path.exists(source):
-                        volume_binds[source] = {"bind": mount_path, "mode": volume_mode}
+                for mount_path, volume in instance.container.devmodes[mount_name].items():
+                    if os.path.isdir(volume.source):
+                        add_volume_mount(mount_path, volume)
                     else:
-                        raise NotFoundException("The volume source path {} does not exist".format(source))
+                        raise NotFoundException(
+                            "Devmode source directory {} does not exist".format(volume.source)
+                        )
+            for mount_path, volume in instance.container.named_volumes.items():
+                add_volume_mount(mount_path, volume)
 
             # Create container
             container_pointer = self.host.client.create_container(

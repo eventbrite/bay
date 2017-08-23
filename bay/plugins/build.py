@@ -69,7 +69,8 @@ class BuildPlugin(BasePlugin):
         # First, collect what volumes are provided by what containers
         providers = _get_providers(self.app)
         # Now see if any of the volumes we're trying to add need it
-        for _, name in instance.container.named_volumes.items():
+        for _, volume in instance.container.named_volumes.items():
+            name = volume.source
             if name in providers:
                 # Alright, this is one that could be provided. Does it already exist?
                 try:
@@ -194,8 +195,8 @@ def build(app, containers, host, cache, recursive, verbose):
         else:
             containers_to_build.append(container)
             for volume in container.named_volumes.values():
-                if volume in providers:
-                    containers_to_build.append(providers[volume])
+                if volume.source in providers:
+                    containers_to_build.append(providers[volume.source])
 
     # Expand containers_to_pull (At this point just the default boot containers
     # from profile) to include runtime dependencies.
@@ -206,8 +207,8 @@ def build(app, containers, host, cache, recursive, verbose):
     def container_volume_dependencies(container):
         volume_deps = set()
         for volume in container.named_volumes.values():
-            if volume in providers:
-                volume_deps.add(providers[volume])
+            if volume.source in providers:
+                volume_deps.add(providers[volume.source])
         return volume_deps
 
     containers_to_pull = dependency_sort(containers_to_pull, container_volume_dependencies)

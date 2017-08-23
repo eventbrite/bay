@@ -5,6 +5,7 @@ import yaml
 
 import attr
 
+from .volumes import BoundVolume, DevMode, NamedVolume
 from ..exceptions import BadConfigError
 
 
@@ -138,17 +139,16 @@ class Container:
         # Volumes is a dict of {container mountpoint: volume name/host path}
         self._bound_volumes = {}
         self._named_volumes = {}
-        for mount_point, source in config_data.get("volumes", {}).items():
-            # Old-style git link
-            # TODO: Add warning here once we've converted enough of the dockerfiles
-            git_match = self.git_volume_pattern.match(source)
-            if git_match:
-                source = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
+        for mount_point, options in config_data.get("volumes", {}).items():
+            options = self._parse_volume_options(options)
             # Split named volumes and directory mounts up
-            if "/" in source:
-                self._bound_volumes[mount_point] = os.path.abspath(os.path.join(self.graph.path, source))
-            else:
-                self._named_volumes[mount_point] = source
+            try:
+                if "/" in options["source"]:
+                    self._bound_volumes[mount_point] = BoundVolume(**options)
+                else:
+                    self._named_volumes[mount_point] = NamedVolume(**options)
+            except TypeError as e:
+                raise BadConfigError("Invalid configuration for volume at {}: {}".format(mount_point, e))
         # Volumes_mount is a deprecated key from the old buildable volumes system.
         # They turn into named volumes.
         # TODO: Deprecate volumes_mount
@@ -162,11 +162,12 @@ class Container:
                 continue
             # Add each mount individually
             self._devmodes[name] = {}
-            for mount_point, source in mounts.items():
-                git_match = self.git_volume_pattern.match(source)
-                if git_match:
-                    source = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
-                self._devmodes[name][mount_point] = os.path.abspath(os.path.join(self.graph.path, source))
+            for mount_point, options in mounts.items():
+                options = self._parse_volume_options(options)
+                try:
+                    self._devmodes[name][mount_point] = DevMode(**options)
+                except TypeError as e:
+                    raise BadConfigError("Invalid configuration for devmode {}: {}".format(name, e))
         # Ports is a dict of {port on container: host exposed port}
         self.ports = config_data.get("ports", {})
         # A list of checks to run before allowing a build (often for network connectivity)
@@ -206,6 +207,21 @@ class Container:
                 "mem_limit",
             }
         }
+
+    def _parse_volume_options(self, options):
+        # If the value is a string, treat it as the source and use default options
+        if isinstance(options, str):
+            options = {
+                "source": options,
+            }
+        # Old-style git link
+        # TODO: Add warning here once we've converted enough of the dockerfiles
+        git_match = self.git_volume_pattern.match(options["source"])
+        if git_match:
+            options["source"] = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
+        if "/" in options["source"]:
+            options["source"] = os.path.abspath(os.path.join(self.graph.path, options["source"]))
+        return options
 
     def get_parent_value(self, name, default):
         """
