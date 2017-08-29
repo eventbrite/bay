@@ -49,7 +49,7 @@ def list(app, host):
     users = {}
     for container in app.containers:
         for _, source in container.named_volumes.items():
-            users.setdefault(source, set()).add(container.name)
+            users.setdefault(source.source, set()).add(container.name)
     # Print volumes
     for details in sorted((host.client.volumes()['Volumes'] or []), key=lambda x: x['Name']):
         table.print_row([
