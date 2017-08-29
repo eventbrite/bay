@@ -1,3 +1,8 @@
+2.7.2 (2017-08-29)
+------------------
+- Fix bug where `volume list` had stopped working
+
+
 2.7.1 (2017-08-23)
 ------------------
 - Fix an error where "cached" appears more than once in the volume mode
