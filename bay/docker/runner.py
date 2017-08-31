@@ -312,7 +312,7 @@ class FormationRunner:
                     elif status is False:
                         message = "{}\n\n{}".format(
                             "Container {} failed to boot!".format(instance.container.name),
-                            self.host.client.logs(instance.name['Names'][0], tail=10),
+                            self.host.client.logs(instance.name, tail=10).decode('utf-8'),
                         )
                         raise DockerRuntimeError(
                             message,

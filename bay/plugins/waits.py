@@ -56,7 +56,7 @@ class WaitsPlugin(BasePlugin):
 
                 message = '{}\n\n{}'.format(
                     "Container {} died while waiting for boot completion".format(instance.container.name),
-                    host.client.logs(instance.name['Names'][0], tail=10).decode('utf-8'),
+                    host.client.logs(instance.name, tail=10).decode('utf-8'),
                 )
                 raise DockerRuntimeError(
                     message,
