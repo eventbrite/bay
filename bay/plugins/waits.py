@@ -53,8 +53,14 @@ class WaitsPlugin(BasePlugin):
             # See if the container actually died
             if not host.container_running(instance.name):
                 task.update(status="Dead", status_flavor=Task.FLAVOR_BAD)
+
+                message = '{}\n\n{}'.format(
+                    "Container {} died while waiting for boot completion".format(instance.container.name),
+                    host.client.logs(instance.name['Names'][0], tail=10).decode('utf-8'),
+                )
                 raise DockerRuntimeError(
-                    "Container {} died while waiting for boot completion".format(instance.container.name)
+                    message,
+                    instance=instance,
                 )
             # Check the waits
             for wait_instance in list(wait_instances):

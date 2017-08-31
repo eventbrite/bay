@@ -310,8 +310,12 @@ class FormationRunner:
                     elif status is True:
                         break
                     elif status is False:
-                        raise DockerRuntimeError(
+                        message = "{}\n\n{}".format(
                             "Container {} failed to boot!".format(instance.container.name),
+                            host.client.logs(instance.name['Names'][0], tail=10),
+                        )
+                        raise DockerRuntimeError(
+                            message,
                             code="BOOT_FAIL",
                             instance=instance,
                         )
