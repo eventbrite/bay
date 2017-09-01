@@ -45,6 +45,13 @@ class DockerRuntimeError(Exception):
         super(DockerRuntimeError, self).__init__(message)
         self.code = code
         self.instance = instance
+        self.message = message
+
+
+class ContainerBootFailure(DockerRuntimeError):
+    """
+    Container died while trying to boot
+    """
 
 
 class RegistryRequiresLogin(Exception):

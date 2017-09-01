@@ -8,8 +8,7 @@ from docker.errors import NotFound
 from .base import BasePlugin
 from ..cli.tasks import Task
 from ..constants import PluginHook
-from ..exceptions import DockerRuntimeError
-
+from ..exceptions import ContainerBootFailure, DockerRuntimeError
 
 class WaitsPlugin(BasePlugin):
     """
@@ -54,12 +53,8 @@ class WaitsPlugin(BasePlugin):
             if not host.container_running(instance.name):
                 task.update(status="Dead", status_flavor=Task.FLAVOR_BAD)
 
-                message = '{}\n\n{}'.format(
-                    "Container {} died while waiting for boot completion".format(instance.container.name),
-                    host.client.logs(instance.name, tail=10).decode('utf-8'),
-                )
-                raise DockerRuntimeError(
-                    message,
+                raise ContainerBootFailure(
+                    "Failed during waits",
                     instance=instance,
                 )
             # Check the waits
