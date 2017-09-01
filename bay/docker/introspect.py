@@ -47,7 +47,14 @@ class FormationIntrospector:
         details = self.host.client.containers(filters={"name": name})
         if not details:
             raise DockerRuntimeError("Cannot introspect single container {}".format(name))
-        return self._create_container(details[0])
+
+        # A race condition in docker [2017/09] means it returns a different format for containers that have just died
+        if isinstance(details[0], dict):
+            container_name = details[0]["Names"][0].lstrip("/")
+        else:
+            container_name = details[0]
+
+        return self._create_container(container_name)
 
     def add_container(self, container_details):
         try:
@@ -60,6 +67,7 @@ class FormationIntrospector:
         """
         Returns a container build from introspected information
         """
+        assert isinstance(container_name, str)
         container_details = self.host.client.inspect_container(container_name)
         # Find the container name in the graph
         try:

@@ -11,7 +11,7 @@ from .introspect import FormationIntrospector
 from .towline import Towline
 from ..cli.tasks import Task
 from ..constants import PluginHook
-from ..exceptions import DockerRuntimeError, DockerInteractiveException, NotFoundException
+from ..exceptions import ContainerBootFailure, DockerRuntimeError, DockerInteractiveException, NotFoundException
 from ..utils.sorting import dependency_sort
 from ..utils.threading import ExceptionalThread, ThreadSet
 
@@ -288,39 +288,58 @@ class FormationRunner:
                     "com.eventbrite.bay.container": instance.container.name,
                 }
             )
+            try:
+                # Foreground containers launch into a PTY at this point. We use an exception so that
+                # it happens in the main thread.
+                if instance.foreground:
+                    def handler():
+                        dockerpty.start(self.host.client, container_pointer)
+                        self.host.client.remove_container(container_pointer)
+                    start_task.finish(status="Going to shell", status_flavor=Task.FLAVOR_GOOD)
+                    raise DockerInteractiveException(handler)
 
-            # Foreground containers launch into a PTY at this point. We use an exception so that
-            # it happens in the main thread.
-            if instance.foreground:
-                def handler():
-                    dockerpty.start(self.host.client, container_pointer)
-                    self.host.client.remove_container(container_pointer)
-                start_task.finish(status="Going to shell", status_flavor=Task.FLAVOR_GOOD)
-                raise DockerInteractiveException(handler)
+                else:
+                    # Make a towline instance and wait on it
+                    self.host.client.start(container_pointer)
+                    towline = Towline(self.host, instance.name)
+                    while True:
+                        status, message = towline.status
+                        if status is None:
+                            if message is not None:
+                                start_task.update(status=message)
+                        elif status is True:
+                            break
+                        elif status is False:
+                            raise ContainerBootFailure(
+                                "Failed during towline",
+                                instance=instance,
+                            )
+                        time.sleep(0.5)
 
-            else:
-                # Make a towline instance and wait on it
-                self.host.client.start(container_pointer)
-                towline = Towline(self.host, instance.name)
-                while True:
-                    status, message = towline.status
-                    if status is None:
-                        if message is not None:
-                            start_task.update(status=message)
-                    elif status is True:
-                        break
-                    elif status is False:
-                        raise DockerRuntimeError(
-                            "Container {} failed to boot!".format(instance.container.name),
-                            code="BOOT_FAIL",
-                            instance=instance,
-                        )
-                    time.sleep(0.5)
+                try:
+                    # Replace the instance with an introspected copy of the live one so it has networking details
+                    instance = FormationIntrospector(
+                        self.host,
+                        self.app.containers,
+                    ).introspect_single_container(instance.name)
+                except DockerRuntimeError:
+                    raise ContainerBootFailure(
+                        "Failed after towline",
+                        instance=instance,
+                    )
 
-            # Replace the instance with an introspected copy of the live one so it has networking details
-            instance = FormationIntrospector(self.host, self.app.containers).introspect_single_container(instance.name)
+                # Run plugins
+                self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
 
-            # Run plugins
-            self.app.run_hooks(PluginHook.POST_START, host=self.host, instance=instance, task=start_task)
+            except ContainerBootFailure as e:
+                message = "{}\n\n{}".format(
+                    "Container {} failed to boot! ({})".format(e.instance.container.name, e.message),
+                    self.host.client.logs(e.instance.name, tail=10).decode('utf-8'),
+                )
+                raise DockerRuntimeError(
+                    message,
+                    code="BOOT_FAIL",
+                    instance=e.instance,
+                )
 
             start_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
