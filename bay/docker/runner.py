@@ -318,7 +318,10 @@ class FormationRunner:
 
                 try:
                     # Replace the instance with an introspected copy of the live one so it has networking details
-                    instance = FormationIntrospector(self.host, self.app.containers).introspect_single_container(instance.name)
+                    instance = FormationIntrospector(
+                        self.host,
+                        self.app.containers,
+                    ).introspect_single_container(instance.name)
                 except DockerRuntimeError:
                     raise ContainerBootFailure(
                         "Failed after towline",

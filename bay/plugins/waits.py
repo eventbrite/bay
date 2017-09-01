@@ -10,6 +10,7 @@ from ..cli.tasks import Task
 from ..constants import PluginHook
 from ..exceptions import ContainerBootFailure, DockerRuntimeError
 
+
 class WaitsPlugin(BasePlugin):
     """
     Contains the basic, standard waits. Waits' .check is called repeatedly and should return True if the condition is
