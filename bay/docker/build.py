@@ -108,8 +108,16 @@ class Builder:
                     if isinstance(data, bytes):
                         data = data.decode("utf8")
                     # Deal with any potential double chunks
+                    data_buffer = ''
                     for data_segment in data.strip().split("\r\n"):
-                        data_obj = json.loads(data_segment.strip())
+                        data_buffer += data_segment
+                        try:
+                            data_obj = json.loads(data_buffer.strip())
+                            data_buffer = ''
+                        except json.decoder.JSONDecodeError:
+                            # Deal with incomplete segments, perhaps ends in subsequent segments
+                            continue
+
                         if 'stream' in data_obj:
                             # docker data stream has extra newlines in it, so we will
                             # strip them before logging.
