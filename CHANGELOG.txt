@@ -1,6 +1,12 @@
-2.8.0 (2017-9-1)
-----------------
+2.8.1 (2017-09-19)
+------------------
+- Fix problem with incomplete JSON segments during build output
+
+
+2.8.0 (2017-09-01)
+------------------
 - Add error handling to docker runtime errors that reports the tail of the failed container
+
 
 2.7.2 (2017-08-29)
 ------------------
