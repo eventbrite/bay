@@ -173,6 +173,11 @@ def build(app, containers, host, cache, recursive, verbose):
     """
     Build container images, along with its build dependencies.
     """
+
+    # `bay build` is equivalent to `bay build profile`
+    if not containers:
+        containers = [ContainerType.Profile]
+
     logfile_name = app.config.get_path('bay', 'build_log_path', app)
     containers_to_pull = []
     containers_to_build = []
