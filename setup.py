@@ -42,6 +42,7 @@ setup(
         tug = bay.cli:cli
 
         [bay.plugins]
+        attach = bay.plugins.attach:AttachPlugin
         boot = bay.plugins.boot:BootPlugin
         build = bay.plugins.build:BuildPlugin
         build_scripts = bay.plugins.build_scripts:BuildScriptsPlugin
