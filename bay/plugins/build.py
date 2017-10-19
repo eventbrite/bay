@@ -26,7 +26,7 @@ def _get_providers(app):
     return providers
 
 
-def _print_last_lines_and_die(logfile_name):
+def _handle_build_failure(app, logfile_name):
     click.echo(RED("Build failed! Last 15 lines of log:"))
     # TODO: More efficient tailing
     lines = []
@@ -39,6 +39,7 @@ def _print_last_lines_and_die(logfile_name):
         log=click.format_filename(logfile_name)),
         err=True
     )
+    app.run_hooks(PluginHook.DOCKER_FAILURE)
     sys.exit(1)
 
 
@@ -92,7 +93,7 @@ class BuildPlugin(BasePlugin):
                             verbose=True,
                         ).build()
                     except BuildFailureError:
-                        _print_last_lines_and_die(logfile_name)
+                        _handle_build_failure(self.app, logfile_name)
 
     def post_build(self, host, container, task):
         """
@@ -304,7 +305,7 @@ def build(app, containers, host, cache, recursive, verbose):
         try:
             image_builder.build()
         except BuildFailureError:
-            _print_last_lines_and_die(logfile_name)
+            _handle_build_failure(app, logfile_name)
 
     app.run_hooks(PluginHook.POST_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
 
