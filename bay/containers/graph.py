@@ -54,6 +54,8 @@ class ContainerGraph:
                 self.prefix = value
             elif key == "registry":
                 self.registry = value
+            elif key == "plugin_configuration":
+                self.plugin_configuration = value
             else:
                 raise BadConfigError("Unknown key in %s: %s" % (self.config_path, key))
         if self.prefix is None:

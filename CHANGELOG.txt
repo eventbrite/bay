@@ -1,3 +1,9 @@
+2.9.0 (2017-10-23)
+------------------
+- Allow plugins to have configuration in the root bay.yml. 
+- DOCKER_FAILURE hook is now called on a build failure.
+- bay build now defaults to bay build profile.
+
 2.8.1 (2017-09-19)
 ------------------
 - Fix problem with incomplete JSON segments during build output
