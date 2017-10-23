@@ -38,6 +38,7 @@ class ContainerGraph:
         """
         self.prefix = None
         self.registry = None
+        self.plugin_configuration = dict()
         # Work out the path to the configuration file
         self.config_path = os.path.join(self.path, "bay.yaml")
         if not os.path.isfile(self.config_path):
