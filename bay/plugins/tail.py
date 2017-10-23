@@ -41,7 +41,7 @@ def tail(app, host, container, lines, follow=False):
     if lines != "all":
         try:
             lines = int(lines)
-        except:
+        except Exception as ex:
             click.echo(RED("Invalid number of lines: {}".format(lines)))
             sys.exit(1)
     if follow:
