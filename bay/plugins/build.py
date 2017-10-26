@@ -305,6 +305,7 @@ def build(app, containers, host, cache, recursive, verbose):
         try:
             image_builder.build()
         except BuildFailureError:
+            app.run_hooks(PluginHook.CONTAINER_FAILURE, host=host, containers=ancestors_to_build, task=task)
             _handle_build_failure(app, logfile_name)
 
     app.run_hooks(PluginHook.POST_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
