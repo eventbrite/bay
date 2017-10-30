@@ -8,6 +8,14 @@ from ..cli.tasks import Task
 from ..exceptions import ImageNotFoundException, ImagePullFailure, BadConfigError
 
 
+def convert_to_json_stream(stream):
+    for lines in stream:
+            if isinstance(lines, bytes):
+                lines = lines.decode("ascii")
+            for line in lines.splitlines():
+                yield json.loads(line)
+
+
 @attr.s
 class ImageRepository:
     """
@@ -116,26 +124,23 @@ class ImageRepository:
         layer_status = {}
         current = None
         total = None
-        for line in stream:
-            if isinstance(line, bytes):
-                line = line.decode("ascii")
-            data = json.loads(line)
-            if 'error' in data:
+        for json_line in convert_to_json_stream(stream):
+            if 'error' in json_line:
                 task.finish(status="Failed", status_flavor=Task.FLAVOR_WARNING)
                 if fail_silently:
                     return
                 else:
                     raise ImagePullFailure(
-                        data['error'],
+                        json_line['error'],
                         remote_name=remote_name,
                         image_tag=image_tag
                     )
-            elif 'id' in data:
-                if data['status'].lower() == "downloading":
-                    layer_status[data['id']] = data['progressDetail']
+            elif 'id' in json_line:
+                if json_line['status'].lower() == "downloading":
+                    layer_status[json_line['id']] = json_line['progressDetail']
 
-                elif "complete" in data['status'].lower() and data['id'] in layer_status:
-                    layer_status[data['id']]['current'] = layer_status[data['id']]['total']
+                elif "complete" in json_line['status'].lower() and json_line['id'] in layer_status:
+                    layer_status[json_line['id']]['current'] = layer_status[json_line['id']]['total']
 
                 if layer_status:
                     statuses = [x for x in layer_status.values()
