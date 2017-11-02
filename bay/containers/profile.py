@@ -128,7 +128,7 @@ class Profile:
                     self.graph.set_dependencies(
                         container,
                         [self.graph[link]
-                        for link in self.calculate_links(container)],
+                         for link in self.calculate_links(container)],
                     )
             # Set flag saying it's specified in a profile (for bay build
             # profile) - not set for the user profile for now
