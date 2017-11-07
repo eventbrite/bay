@@ -1,5 +1,6 @@
 import attr
 import click
+import datetime
 import json
 
 from docker.errors import NotFound
@@ -77,6 +78,7 @@ class ImageRepository:
         Pulls the most recent version of the given image tag from remote
         docker registry.
         """
+        start_time = datetime.datetime.now().replace(microsecond=0)
 
         assert isinstance(image_name, str)
         assert isinstance(image_tag, str)
@@ -151,7 +153,11 @@ class ImageRepository:
                 if total is not None:
                     task.update(progress=(current, total))
 
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        end_time = datetime.datetime.now().replace(microsecond=0)
+        time_delta_str = str(end_time - start_time)
+        if time_delta_str.startswith('0:'):
+                time_delta_str = time_delta_str[2:]
+        task.finish(status='Done [{}]'.format(time_delta_str), status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
         self._tag_image(remote_name, image_tag, image_name, image_tag, fail_silently)
