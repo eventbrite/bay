@@ -160,15 +160,11 @@ class ImageRepository:
         task.finish(status='Done [{}]'.format(time_delta_str), status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
-        self._tag_image(remote_name, image_tag, image_name, image_tag, fail_silently)
-        self._tag_image(remote_name, image_tag, image_name, "latest", fail_silently)
-
-    def _tag_image(self, source_image, source_tag, target_image, target_tag, fail_silently):
         try:
             self.host.client.tag(
-                source_image + ":" + source_tag,
-                target_image,
-                tag=target_tag,
+                remote_name + ":" + image_tag,
+                image_name,
+                tag=image_tag,
                 force=True
             )
         except NotFound:
@@ -176,9 +172,10 @@ class ImageRepository:
                 return
             else:
                 raise ImagePullFailure(
-                    'Failed to tag {}:{}'.format(source_image, source_tag),
-                    remote_name=source_image,
-                    image_tag=source_tag)
+                    'Failed to tag {}:{}'.format(remote_name, image_name),
+                    remote_name=remote_name,
+                    image_tag=image_tag
+                )
 
     def image_version(self, image_name, image_tag):
         """
