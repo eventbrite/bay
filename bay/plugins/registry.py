@@ -1,9 +1,17 @@
 import attr
 import click
+import sys
 
 from .base import BasePlugin
 from ..cli.argument_types import HostType, ContainerType
-from ..exceptions import RegistryRequiresLogin
+from ..cli.colors import (
+    RED,
+    YELLOW,
+)
+from ..exceptions import (
+    BadConfigError,
+    RegistryRequiresLogin,
+)
 
 
 @attr.s
@@ -51,8 +59,16 @@ def login(app, host):
     """
     Logs into a registry
     """
-    registry_instance = host.images.get_registry(app)
-    registry_instance.login(host, app.root_task)
+    try:
+        registry_instance = host.images.get_registry(app)
+        registry_instance.login(host, app.root_task)
+    except BadConfigError as e:
+        click.echo(RED(str(e)))
+        sys.exit(1)
+    except Exception as e:
+        click.echo(RED(str(e)))
+        click.echo(YELLOW('Missing the property "registry" from docker-dev/bay.yaml'))
+        sys.exit(1)
 
 
 @click.command()
