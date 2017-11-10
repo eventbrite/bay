@@ -98,7 +98,8 @@ def doctor(app, host):
     exams = app.get_catalog_items("doctor-exam").values()
     problem = False
     for exam in exams:
-        if not exam(app).run(host, app.root_task):
+        exam_result = exam(app).run(host, app.root_task)
+        if exam_result is not None and not exam_result:
             problem = True
     if problem:
         sys.exit(1)
