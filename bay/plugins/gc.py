@@ -14,27 +14,13 @@ from ..utils.sorting import dependency_sort
 @attr.s
 class GcPlugin(BasePlugin):
     """
-    Does garbage collection either on demand or every so often after a build finishes.
+    Does garbage collection on demand.
     """
 
     provides = ["gc"]
 
     def load(self):
         self.add_command(gc)
-        self.add_hook(PluginHook.POST_BUILD, self.post_build)
-
-    def post_build(self, host, container, task):
-        """
-        Occasionally runs garbage collection automatically after a build.
-        """
-        collector = GarbageCollector(host)
-        # Only check one in 10 times
-        if random.random() < 0.1:
-            # Then decide to GC based on the ratio
-            probability = (1 - collector.clean_image_ratio()) * 0.1
-            if random.random() < probability:
-                collector.gc_all(task)
-
 
 @attr.s
 class GarbageCollector:
@@ -44,82 +30,12 @@ class GarbageCollector:
 
     host = attr.ib()
 
-    def dead_containers(self):
-        """
-        Gets all container IDs that are not actually running
-        """
-        live_containers = set(c['Id'] for c in self.host.client.containers(all=False, trunc=False, quiet=True))
-        all_containers = set(c['Id'] for c in self.host.client.containers(all=True, trunc=False, quiet=True))
-        return all_containers - live_containers
-
-    def clean_image_ratio(self):
-        """
-        Returns a rough estimate of the ratio of good images to all images, for
-        use in automatic GC decisions.
-        """
-        return len(self.named_images()) / len(self.host.client.images(all=True))
-
-    def named_images(self):
-        """
-        Gets all images with a tag from the current set of Docker images.
-        We can't use the config as a source as there might be images from
-        other projects or docker tools.
-        """
-        images = set()
-        for image in self.host.client.images(all=False):
-            repo_tags = [
-                tag for tag in (image.get("RepoTags", []) or [])
-                if tag != "<none>:<none>" and len(tag.split("/")) < 3
-            ]
-            if repo_tags:
-                images.add(image['Id'])
-        return images
-
-    def live_images(self, force=False):
-        """
-        Gets image IDs (including intermediate layers) that are used by running containers
-        """
-        live_images = set()
-        for container in self.host.client.containers(all=False, trunc=False):
-            try:
-                result = self.host.client.history(container['Image'])
-            except NotFound:
-                if force:
-                    result = []
-                else:
-                    raise
-            for image in result:
-                live_images.add(image['Id'])
-        return live_images
-
-    def image_layers(self, named_images, force=False):
-        """
-        Gets image IDs of all layers used by the named images
-        """
-        current_images = set()
-        for named_image in named_images:
-            try:
-                result = self.host.client.history(named_image)
-            except NotFound:
-                if force:
-                    result = []
-                else:
-                    raise
-            for image in result:
-                current_images.add(image['Id'])
-        return current_images
-
-    def all_images(self):
-        """
-        Returns all the live image IDs on the host sorted in dependency order, with
-        the children first and ancestors last.
-        """
-        image_parents = {}
-        for image in self.host.client.images(quiet=False, all=True):
-            image_parents[image['Id']] = image['ParentId'] if image['ParentId'] else None
-        all_images = dependency_sort(image_parents.keys(), lambda current: [image_parents[current]])
-        all_images.reverse()
-        return all_images
+    def gc_all(self, parent_task):
+        task = Task("Running garbage collection", parent=parent_task)
+        self.gc_containers(task)
+        self.gc_remote_tags(task)
+        self.gc_images(task)
+        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
     def gc_containers(self, parent_task):
         """
@@ -134,6 +50,14 @@ class GarbageCollector:
                 raise DockerRuntimeError("Container {} vanished during gc".format(name))
             task.update(progress=(i + 1, len(dead_containers)))
         task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+
+    def dead_containers(self):
+        """
+        Gets all container IDs that are not actually running
+        """
+        live_containers = set(c['Id'] for c in self.host.client.containers(all=False, trunc=False, quiet=True))
+        all_containers = set(c['Id'] for c in self.host.client.containers(all=True, trunc=False, quiet=True))
+        return all_containers - live_containers
 
     def gc_remote_tags(self, parent_task):
         """
@@ -173,12 +97,67 @@ class GarbageCollector:
             task.update(progress=(i + 1, len(dead_images)))
         task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
-    def gc_all(self, parent_task):
-        task = Task("Running garbage collection", parent=parent_task)
-        self.gc_containers(task)
-        self.gc_remote_tags(task)
-        self.gc_images(task)
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+    def named_images(self):
+        """
+        Gets all images with a tag from the current set of Docker images.
+        We can't use the config as a source as there might be images from
+        other projects or docker tools.
+        """
+        images = set()
+        for image in self.host.client.images(all=False):
+            repo_tags = [
+                tag for tag in (image.get("RepoTags", []) or [])
+                if tag != "<none>:<none>" and len(tag.split("/")) < 3
+            ]
+            if repo_tags:
+                images.add(image['Id'])
+        return images
+
+    def image_layers(self, named_images, force=False):
+        """
+        Gets image IDs of all layers used by the named images
+        """
+        current_images = set()
+        for named_image in named_images:
+            try:
+                result = self.host.client.history(named_image)
+            except NotFound:
+                if force:
+                    result = []
+                else:
+                    raise
+            for image in result:
+                current_images.add(image['Id'])
+        return current_images
+
+    def live_images(self, force=False):
+        """
+        Gets image IDs (including intermediate layers) that are used by running containers
+        """
+        live_images = set()
+        for container in self.host.client.containers(all=False, trunc=False):
+            try:
+                result = self.host.client.history(container['Image'])
+            except NotFound:
+                if force:
+                    result = []
+                else:
+                    raise
+            for image in result:
+                live_images.add(image['Id'])
+        return live_images
+
+    def all_images(self):
+        """
+        Returns all the live image IDs on the host sorted in dependency order, with
+        the children first and ancestors last.
+        """
+        image_parents = {}
+        for image in self.host.client.images(quiet=False, all=True):
+            image_parents[image['Id']] = image['ParentId'] if image['ParentId'] else None
+        all_images = dependency_sort(image_parents.keys(), lambda current: [image_parents[current]])
+        all_images.reverse()
+        return all_images
 
 
 @click.command()
