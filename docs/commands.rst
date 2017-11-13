@@ -72,8 +72,7 @@ gc
 --
 
 Runs garbage collection on docker images and containers to clean up ones which
-are no longer needed. This is automatically triggered during builds when too
-many images are detected, but you can also invoke it manually if you wish to
+are no longer needed. Invoke it manually if you wish to
 try and free up some disk space and speed up Docker slightly.
 
 
