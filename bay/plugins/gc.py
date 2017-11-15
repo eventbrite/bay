@@ -1,12 +1,10 @@
 import attr
 import click
-import random
 from docker.errors import NotFound
 
 from .base import BasePlugin
 from ..cli.argument_types import HostType
 from ..cli.tasks import Task
-from ..constants import PluginHook
 from ..exceptions import DockerRuntimeError
 from ..utils.sorting import dependency_sort
 
@@ -21,6 +19,7 @@ class GcPlugin(BasePlugin):
 
     def load(self):
         self.add_command(gc)
+
 
 @attr.s
 class GarbageCollector:
