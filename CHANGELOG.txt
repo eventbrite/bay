@@ -1,3 +1,8 @@
+2.10.0 (2017-11-16)
+------------------
+- Bay gc doesn't run automatically anymore.
+- If an image is not on Amazon ECR it will get built.
+
 2.9.4 (2017-11-08)
 ------------------
 - Fix versioning.
