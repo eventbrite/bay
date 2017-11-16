@@ -124,7 +124,7 @@ class ImageRepository:
 
         try:
             stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
-        except NotFound as error: 
+        except NotFound as error:
             # we should always have Docker images uploaded on ECR, but if for some
             # reason the image can't be found, we raise an error and it will get built
             # instead
