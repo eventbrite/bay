@@ -84,7 +84,7 @@ class HostType(SpellCorrectChoice):
     @cached_property
     def choices(self):
         # Handle no object in the context during error states
-        if not hasattr(self.context, "obj"):
+        if not hasattr(self, "context") or not hasattr(self.context, "obj"):
             return []
         # Return valid choices
         choices = [host.alias for host in self.context.obj.hosts]
