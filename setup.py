@@ -21,6 +21,10 @@ setup(
         "bay.utils",
     ],
     include_package_data=True,
+    data_files=[
+        # zsh completions
+        ('/usr/local/share/zsh/site-functions', ['data/completion/_bay']),
+    ],
     install_requires=[
         'attrs',
         'Click>=6.6',
