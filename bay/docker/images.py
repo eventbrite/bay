@@ -3,7 +3,7 @@ import click
 import datetime
 import json
 
-from docker.errors import NotFound
+from docker.errors import NotFound, APIError
 
 from ..cli.tasks import Task
 from ..exceptions import ImageNotFoundException, ImagePullFailure, BadConfigError
@@ -26,6 +26,7 @@ class ImageRepository:
     """
     host = attr.ib()
     images = attr.ib(default=attr.Factory(dict))
+    registry = None
 
     def list_images(self):
         """
@@ -58,20 +59,27 @@ class ImageRepository:
         Given an app, returns the registry handler responsible for handling it
         (or None if it does not need a handler)
         """
-        registry = app.containers.registry
-        if registry is None:
+        # if no registry key is defined in the configuration, return
+        if not app.containers.registry:
             return None
-        # Work out what plugin to use
-        plugin_name, registry_data = registry.split(":", 1)
-        # Call the plugin to log in/etc to the registry
-        registry_plugins = app.get_catalog_items("registry")
-        if plugin_name == "plain":
-            # The "plain" plugin is a shortcut for "no plugin"
-            return BasicRegistryHandler(app, registry_data)
-        elif plugin_name in registry_plugins:
-            return registry_plugins[plugin_name](app, registry_data)
-        else:
-            raise BadConfigError("No registry plugin for {} loaded".format(plugin_name))
+
+        # cache the registry object so that it is not recreated
+        # during each image pull, which would re-execute a docker login
+        # for each pull (it takes 3-5 seconds)
+        if not self.registry:
+            # Work out what registry plugin to use
+            plugin_name, registry_data = app.containers.registry.split(":", 1)
+            # Call the plugin to log in/etc to the registry
+            registry_plugins = app.get_catalog_items("registry")
+            if plugin_name == "plain":
+                # The "plain" plugin is a shortcut for "no plugin"
+                self.registry = BasicRegistryHandler(app, registry_data)
+            elif plugin_name in registry_plugins:
+                self.registry =  registry_plugins[plugin_name](app, registry_data)
+            else:
+                raise BadConfigError("No registry plugin for {} loaded".format(plugin_name))
+
+        return self.registry
 
     def pull_image_version(self, app, image_name, image_tag, parent_task, fail_silently=False):
         """
@@ -95,8 +103,9 @@ class ImageRepository:
                     image_tag=image_tag
                 )
 
-        # See if the registry is willing to give us a URL (it's logged in)
         registry = self.get_registry(app)
+
+        # See if the registry is willing to give us a URL (it's logged in)
         if registry:
             registry_url = registry.url(self.host)
         else:
@@ -122,18 +131,7 @@ class ImageRepository:
             image_name=image_name,
         )
 
-        try:
-            stream = self.host.client.pull(remote_name, tag=image_tag, stream=True)
-        except NotFound as error:
-            # we should always have Docker images uploaded on ECR, but if for some
-            # reason the image can't be found, we raise an error and it will get built
-            # instead
-            task.update(status='Not found', status_flavor=Task.FLAVOR_WARNING)
-            raise ImagePullFailure(
-                error,
-                remote_name=remote_name,
-                image_tag=image_tag
-            )
+        stream = self._pull(app, task, remote_name, image_tag)
 
         layer_status = {}
         current = None
@@ -174,6 +172,35 @@ class ImageRepository:
         # Tag the remote image as the right name
         self._tag_image(remote_name, image_tag, image_name, image_tag, fail_silently)
         self._tag_image(remote_name, image_tag, image_name, "latest", fail_silently)
+
+    def _pull(self, app, task, remote_name, image_tag, tries=0):
+        # this method is called recursively in case the docker credentials expire
+        # let's not run it more than 3 times in a row, we don't want an infinite loop here
+        # if there is a problem on the remote repository side
+        if (tries > 2):
+            task.update(status='Too many failures while pulling', status_flavor=Task.FLAVOR_WARNING)
+            raise ImagePullFailure('Too many failures while pulling', remote_name=remote_name, image_tag=image_tag)
+
+        try:
+            return self.host.client.pull(remote_name, tag=image_tag, stream=True)
+        except NotFound as error:
+            # we should always have Docker images uploaded on ECR, but if for some
+            # reason the image can't be found, we raise an error and it will get built
+            # instead
+            task.update(status='Not found', status_flavor=Task.FLAVOR_WARNING)
+            raise ImagePullFailure(error, remote_name=remote_name, image_tag=image_tag)
+        except APIError as error:
+            if "credentials" in str(error):
+                # the docker credentials expired while pulling, get a new registry,
+                # login again and try pulling again
+                self.registry = None
+                self.get_registry(app)
+                self.registry.url(self.host)
+                tries += 1
+                return self._pull(app, task, remote_name, image_tag, tries)
+            else:
+                task.update(status=str(error), status_flavor=Task.FLAVOR_WARNING)
+                raise ImagePullFailure(error, remote_name=remote_name, image_tag=image_tag)
 
     def _tag_image(self, source_image, source_tag, target_image, target_tag, fail_silently):
         try:
