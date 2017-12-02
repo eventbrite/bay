@@ -75,7 +75,7 @@ class ImageRepository:
                 # The "plain" plugin is a shortcut for "no plugin"
                 self.registry = BasicRegistryHandler(app, registry_data)
             elif plugin_name in registry_plugins:
-                self.registry =  registry_plugins[plugin_name](app, registry_data)
+                self.registry = registry_plugins[plugin_name](app, registry_data)
             else:
                 raise BadConfigError("No registry plugin for {} loaded".format(plugin_name))
 
