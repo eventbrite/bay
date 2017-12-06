@@ -1,0 +1,151 @@
+#compdef bay
+#
+# zsh completion for bay (https://github.com/eventbrite/bay).
+#
+# Completions are supported for the basic commands (`bay <command>`), commands
+# that expect a `<container>` as an argument (e.g. `bay shell`), and `bay profile`.
+_bay() {
+  local curcontext="$curcontext" state line _opts
+
+  _arguments -C \
+    '1: :->cmds' \
+    '2:: :->args'
+
+  case $state in
+    cmds)
+      __bay_cached_commands
+      ;;
+    args)
+      case $line[1] in
+        (build|container|restart|run|shell)
+          __bay_cached_containers
+        ;;
+        # Even though these can only run on live containers, it's more useful to
+        # have quick completions than to wait for `bay ps` to only complete live ones.
+        (attach|stop|tail)
+          __bay_cached_containers
+        ;;
+        profile)
+          __bay_cached_profiles
+        ;;
+      esac
+  esac
+}
+
+# Completions for first `bay` argument
+__bay_cached_commands() {
+  __bay_cached_describe __bay_commands "bay commands"
+}
+
+# Many commands expect a list of containers as the argument, e.g. build, run
+__bay_cached_containers() {
+  __bay_cached_describe __bay_containers "container"
+}
+
+# Completions for `bay profile`
+__bay_cached_profiles() {
+  __bay_cached_describe __bay_profiles "bay profiles"
+}
+
+# Print a line with a name and description for each bay command in the
+# _describe format (name:description)
+__bay_commands() {
+  bay --help | awk '
+# From the line after we hit "Commands:", until the next empty line
+# https://stackoverflow.com/questions/17908555/printing-with-sed-or-awk-a-line-following-a-matching-pattern#answer-17914105
+# gives some background on this approach
+is_after_commands_header,!$0 {
+  # Unset flag and skip the empty line
+  if (!$0) {
+    is_after_commands_header = 0
+    next
+  }
+
+  # Format of line is "  command      A description of the command"
+  cmd = $1
+
+  # Get the rest of the line as the description
+  # See https://stackoverflow.com/questions/18457486/print-rest-of-the-fields-in-awk#18457573
+  $1 = ""
+  description = substr($0, 2)
+
+  # _describe option format
+  print cmd ":" description
+}
+
+# Set flag that "Commands:" has been hit
+# This has to be after the previous action so we only print the lines after
+# we hit "Commands:"
+/Commands:/ {
+  is_after_commands_header = 1
+}'
+}
+
+# Print a line for each `bay container`
+__bay_containers() {
+  # Skip the headers line and print the NAME field
+  bay container | awk 'NR > 1 {print $1}'
+}
+
+# Print a line for each `bay profile`
+__bay_profiles() {
+  # Use awk to strip whitespace and print each profile name
+  bay list_profiles | awk '{print $1}'
+}
+
+# Cache bay completions generated using the _describe helper
+#
+# $1 - Completion function name. The completion function should return a newline
+#   separated list of completions, with each line following a format accepted by
+#   _describe.
+#   https://github.com/zsh-users/zsh-completions/blob/master/zsh-completions-howto.org#writing-simple-completion-functions-using-_describe
+#   The name of the completion function is also used as the cache key
+# $2 - Description of the completions. This is passed directly as the second argument to _describe
+#
+# This is `bay` specific in that it hardcodes the caching policy to __bay_caching_policy
+__bay_cached_describe() {
+  # Set caching policy if not already populated in this context
+  local update_policy
+  zstyle -s ":completion:${curcontext}:" cache-policy update_policy
+  if [[ -z "$update_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy __bay_caching_policy
+  fi
+
+  _completion_function_name=$1
+  _completions=()
+  _cache_key="$_completion_function_name"
+
+  # Try populating our _completions from the cache if the cache is still valid
+  if ! _cache_invalid $_cache_key; then
+    _retrieve_cache $_cache_key
+  fi
+
+  # If cache failed to populate _completions, generate the values
+  if [ -z "$_completions" ]; then
+    # Turning each line of output into an array of the lines is frustratingly tedious in zsh.
+    # Explanation here: http://www.zsh.org/mla/users/2007/msg00094.html
+    _completions=(${(f)"$($_completion_function_name)"})
+
+    # Cache results
+    if [ -n "$_completions" ]; then
+      _store_cache $_cache_key _completions
+    fi
+  fi
+
+  _describe $2 _completions
+}
+
+# Invalidate cached content after a day
+# $1 - full path of cache file
+__bay_caching_policy() {
+  local -a expired_caches
+
+  # TTL: 1 day
+  # Array has an element for each expired cache file
+  # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Glob-Qualifiers
+  expired_caches=( "$1"(Nmd+1) )
+
+  # http://zsh.sourceforge.net/Doc/Release/Arithmetic-Evaluation.html#Arithmetic-Evaluation
+  # Return zero if there are expired caches that need rebuilding, else non-zero
+  (( $#expired_caches ))
+}
