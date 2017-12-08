@@ -75,6 +75,8 @@ def up(app, host):
     Start up a profile by booting the default containers.
     Leaves any other containers that are running (shell, ssh-agent, etc.) alone.
     """
+    profile = app.profiles[0].parent_profile if app.profiles else ''
+    click.echo("Starting up profile %s..." % CYAN(profile))
     # Do removal loop first so we don't step on adding containers later
     formation = FormationIntrospector(host, app.containers).introspect()
     for instance in list(formation):
