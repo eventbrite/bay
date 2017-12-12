@@ -1,3 +1,8 @@
+2.11.2 (2017-12-12)
+------------------
+- Allow testing local changes for static image.
+- Add BAY_VOLUME_HOME for filesystem separation.
+
 2.11.0 (2017-12-01)
 ------------------
 - Speed up pulling of images by not docker logging in so often
