@@ -102,7 +102,7 @@ class BuildPlugin(BasePlugin):
         Volumes are stored with the ID of the corresponding volume-providing image. This will only run the container
         to recreate the volume if the image"s ID (hash) has changed.
         """
-        image_details = host.client.inspect_image(container.image_name)
+        image_details = host.client.inspect_image(container.image_name_tagged)
         provides_volume = container.extra_data.get("provides-volume", None)
 
         def should_extract_volume():

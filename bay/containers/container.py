@@ -178,6 +178,11 @@ class Container:
         # The image tag to use on the docker image. "local" is a special value that resolves to "latest" without
         # ever attempting to pull.
         self.image_tag = config_data.get("image_tag", "local")
+        # image name including tag: format {image_name}:{tag}
+        self.image_name_tagged = "{image_name}:{tag}".format(
+            image_name=self.image_name,
+            tag=self.image_tag if self.image_tag else 'latest'
+        )
         # Environment variables to send to the container
         self.environment = config_data.get("environment", {})
         # Fast kill says if the container is safe to kill immediately
