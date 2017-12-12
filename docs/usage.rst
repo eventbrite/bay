@@ -78,3 +78,13 @@ according to the dependencies (links) specified between containers. For example,
 if container ``www`` depends on both ``postgres`` and ``redis`` to run, but those
 two do not depend on each other, Bay will start ``postgres`` and ``redis`` in
 parallel, and once they are both up, then start ``www``.
+
+
+Volume Mounting
+---------------
+
+If you are running under a system where the Docker daemon sees the filesystem
+differently to your Bay instance (e.g. it's a remote daemon, or running in a
+virtual machine like with Docker for Windows), you can set the
+``BAY_VOLUME_HOME`` environment variable to the location that ``BAY_HOME``
+would be on that remote system.

@@ -246,7 +246,7 @@ class FormationRunner:
                 volume_binds[volume.source] = {"bind": mount_path, "mode": volume.mode}
 
             for mount_path, volume in instance.container.bound_volumes.items():
-                if os.path.isdir(volume.source):
+                if os.path.isdir(volume.source) or os.environ.get("BAY_VOLUME_HOME"):
                     add_volume_mount(mount_path, volume)
                 elif volume.required:
                     raise NotFoundException(
@@ -255,7 +255,7 @@ class FormationRunner:
             # Add any active devmodes
             for mount_name in instance.devmodes:
                 for mount_path, volume in instance.container.devmodes[mount_name].items():
-                    if os.path.isdir(volume.source):
+                    if os.path.isdir(volume.source) or os.environ.get("BAY_VOLUME_HOME"):
                         add_volume_mount(mount_path, volume)
                     else:
                         raise NotFoundException(

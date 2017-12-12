@@ -225,7 +225,11 @@ class Container:
         if git_match:
             options["source"] = "../{}/{}".format(git_match.group(1), git_match.group(2).lstrip("/"))
         if "/" in options["source"]:
-            options["source"] = os.path.abspath(os.path.join(self.graph.path, options["source"]))
+            # Allow the volume mount root to be different if needed (e.g. Windows)
+            if os.environ.get("BAY_VOLUME_HOME"):
+                options["source"] = os.path.join(os.environ["BAY_VOLUME_HOME"], options["source"])
+            else:
+                options["source"] = os.path.abspath(os.path.join(self.graph.path, options["source"]))
         return options
 
     def get_parent_value(self, name, default):
