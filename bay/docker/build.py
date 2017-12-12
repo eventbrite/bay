@@ -119,8 +119,8 @@ class Builder:
                             continue
 
                         if 'stream' in data_obj:
-                            # docker data stream has extra newlines in it, so we will
-                            # strip them before logging.
+                            # docker data stream has extra newlines in it
+                            # we will strip them before logging.
                             self.logger.info(data_obj['stream'].rstrip())
                             if data_obj['stream'].startswith('Step '):
                                 progress += 1
@@ -131,9 +131,11 @@ class Builder:
                 self.logger.task = self.task
 
             # always tag built image as 'latest'.
-            # if the image is referenced in a FROM statement, it would find it even if the version is not set in the 'FROM' statement.
+            # if the image is referenced in a FROM statement,
+            # it would find it even if the version is not set in the 'FROM' statement.
             if build_successful and self.container.image_tag != 'latest':
-                self.host.client.tag(self.container.image_name_tagged, self.container.image_name, tag='latest', force=True)
+                self.host.client.tag(self.container.image_name_tagged,
+                self.container.image_name, tag='latest', force=True)
             else:
                 raise FailedCommandException
 
