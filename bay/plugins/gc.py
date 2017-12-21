@@ -1,12 +1,9 @@
 import attr
 import click
-from docker.errors import NotFound
 
 from .base import BasePlugin
 from ..cli.argument_types import HostType
 from ..cli.tasks import Task
-from ..exceptions import DockerRuntimeError
-from ..utils.sorting import dependency_sort
 
 
 @attr.s
@@ -42,7 +39,8 @@ class GarbageCollector:
         """
         task = Task("Removing all stopped containers", parent=parent_task)
         response = self.host.client.prune_containers()
-        task.finish(status="Done, reclaimed {}MB".format(response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
+        task.finish(status="Done, reclaimed {}MB".format(
+            response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
     def gc_networks(self, parent_task):
         """
@@ -58,7 +56,8 @@ class GarbageCollector:
         """
         task = Task("Removing all dangling images", parent=parent_task)
         response = self.host.client.prune_images({"dangling": True})
-        task.finish(status="Done, reclaimed {}MB".format(response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
+        task.finish(status="Done, reclaimed {}MB".format(
+            response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
 
 @click.command()

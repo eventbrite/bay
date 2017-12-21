@@ -4,8 +4,9 @@ import sys
 
 from .base import BasePlugin
 from ..cli.argument_types import ContainerType, HostType
-from ..cli.colors import RED
+from ..cli.colors import CYAN, RED
 from ..cli.tasks import Task
+from ..constants import PluginHook
 from ..docker.introspect import FormationIntrospector
 from ..docker.runner import FormationRunner
 from ..exceptions import DockerRuntimeError, ImageNotFoundException
@@ -141,15 +142,32 @@ def run_formation(app, host, formation, task):
     """
     Common function to run a formation change.
     """
+    run_hook = task.name != "Stopping containers"
+    if run_hook:
+        app.run_hooks(PluginHook.PRE_GROUP_START, host=host, formation=formation, task=task)
+    container_in_error = None
+    error_message = None
+    show_tail_message = False
     try:
         FormationRunner(app, host, formation, task).run()
     # General docker/runner error
     except DockerRuntimeError as e:
-        click.echo(RED(str(e)))
+        container_in_error = e.instance.container
+        error_message = str(e)
         if e.code == "BOOT_FAIL":
-            click.echo(RED("You can see its output with `bay tail {}`.".format(e.instance.container.name)))
+            show_tail_message = True
     # An image was not found
     except ImageNotFoundException as e:
-        click.echo(RED("Missing image for {} - cannot continue boot.".format(e.container.name)))
+        container_in_error = e.instance.container
+        error_message = "Missing image for {} - cannot continue boot.".format(container_in_error.name)
+
+    # Set error properties to be used in post hook
+    if run_hook:
+        app.run_hooks(PluginHook.POST_GROUP_START, host=host, formation=formation, task=task,
+                  container_in_error=container_in_error, error_message=error_message)
+    if error_message:
+        click.echo(RED(error_message))
+        if show_tail_message:
+            click.echo(CYAN("You can see its output with `bay tail {}`.".format(container_in_error.name)))
     else:
         task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)

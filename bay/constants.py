@@ -5,6 +5,8 @@ class PluginHook:
     POST_START = "post-start"
     PRE_GROUP_BUILD = "pre-group-build"
     POST_GROUP_BUILD = "post-group-build"
+    PRE_GROUP_START = "pre-group-start"
+    POST_GROUP_START = "post-group-start"
     DOCKER_FAILURE = "docker-fail"
     CONTAINER_FAILURE = "container-fail"
 
@@ -15,6 +17,8 @@ class PluginHook:
         POST_START,
         PRE_GROUP_BUILD,
         POST_GROUP_BUILD,
+        PRE_GROUP_START,
+        POST_GROUP_START,
         DOCKER_FAILURE,
         CONTAINER_FAILURE,
     ])
