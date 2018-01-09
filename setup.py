@@ -25,10 +25,10 @@ setup(
         'attrs',
         'Click>=6.6',
         'PyYAML',
-        'docker~=2.5.1',
+        'docker~=2.7.0',
         'dockerpty==0.4.1',
         'scandir',
-        'requests<2.11.0',
+        'requests >= 2.14.2, != 2.18.0',
     ],
     extras_require={
         'spell': ['pylev'],
