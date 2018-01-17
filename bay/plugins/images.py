@@ -58,10 +58,11 @@ def list(ctx, host):
 
 @image.command()
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.option("--force", "-f", type=bool, default=False)
 @click.argument("container", type=ContainerType())
 @click.argument("version", default="latest")
 @click.pass_obj
-def destroy(app, host, container, version):
+def destroy(app, host, container, version, force):
     """
     Removes an image for a container
     """
@@ -74,7 +75,6 @@ def destroy(app, host, container, version):
     task = Task("Destroying {}:{}".format(container.image_name, version))
     garbage_collector = GarbageCollector(host)
     garbage_collector.gc_containers(task)
-    garbage_collector.gc_remote_tags(task)
     # Destroy it
-    host.client.remove_image(image_versions[version])
+    host.client.remove_image(image_versions[version], force=force)
     task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
