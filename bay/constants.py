@@ -1,8 +1,9 @@
 class PluginHook:
     PRE_BUILD = "pre-build"
     POST_BUILD = "post-build"
-    PRE_START = "pre-start"
-    POST_START = "post-start"
+    PRE_RUN_CONTAINER = "pre-run-container"
+    POST_RUN_CONTAINER = "post-run-container"
+    POST_RUN_CONTAINER_FULLY_STARTED = "post-run-container-fully-started"
     PRE_GROUP_BUILD = "pre-group-build"
     POST_GROUP_BUILD = "post-group-build"
     PRE_GROUP_START = "pre-group-start"
@@ -13,8 +14,9 @@ class PluginHook:
     valid_hooks = frozenset([
         PRE_BUILD,
         POST_BUILD,
-        PRE_START,
-        POST_START,
+        PRE_RUN_CONTAINER,
+        POST_RUN_CONTAINER,
+        POST_RUN_CONTAINER_FULLY_STARTED,
         PRE_GROUP_BUILD,
         POST_GROUP_BUILD,
         PRE_GROUP_START,

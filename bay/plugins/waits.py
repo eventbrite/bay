@@ -20,7 +20,7 @@ class WaitsPlugin(BasePlugin):
     provides = ["waits"]
 
     def load(self):
-        self.add_hook(PluginHook.POST_START, self.post_start)
+        self.add_hook(PluginHook.POST_RUN_CONTAINER, self.post_start)
         self.add_catalog_type("wait")
         self.add_catalog_item("wait", "http", HttpWait)
         self.add_catalog_item("wait", "https", HttpsWait)

@@ -8,7 +8,7 @@ class LegacyEnvPlugin(BasePlugin):
     """
 
     def load(self):
-        self.add_hook(PluginHook.PRE_START, self.add_link_envs)
+        self.add_hook(PluginHook.PRE_RUN_CONTAINER, self.add_link_envs)
 
     def add_link_envs(self, host, instance, task):
         """

@@ -54,7 +54,7 @@ class BuildPlugin(BasePlugin):
     def load(self):
         self.add_command(build)
         self.add_catalog_type("registry")
-        self.add_hook(PluginHook.PRE_START, self.pre_start)
+        self.add_hook(PluginHook.PRE_RUN_CONTAINER, self.pre_start)
         self.add_hook(PluginHook.POST_BUILD, self.post_build)
 
     def pre_start(self, host, instance, task):

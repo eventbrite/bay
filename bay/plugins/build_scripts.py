@@ -13,7 +13,7 @@ class BuildScriptsPlugin(BasePlugin):
     def load(self):
         self.add_hook(PluginHook.PRE_BUILD, self.run_pre_build_script)
         self.add_hook(PluginHook.POST_BUILD, self.run_post_build_script)
-        self.add_hook(PluginHook.PRE_START, self.run_pre_start_script)
+        self.add_hook(PluginHook.PRE_RUN_CONTAINER, self.run_pre_start_script)
 
     def run_pre_build_script(self, host, container, task):
         """

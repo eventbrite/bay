@@ -24,7 +24,7 @@ class SSHAgentPlugin(BasePlugin):
 
     def load(self):
         self.add_hook(PluginHook.PRE_BUILD, self.pre_build)
-        self.add_hook(PluginHook.PRE_START, self.pre_start)
+        self.add_hook(PluginHook.PRE_RUN_CONTAINER, self.pre_start)
 
     def pre_build(self, host, container, task):
         """
