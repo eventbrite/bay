@@ -11,7 +11,7 @@ Selecting a profile
 
 The first thing to do is to select a profile. To see available profiles, run::
 
-    bay list-profiles
+    bay list_profiles
 
 Then, select one::
 
