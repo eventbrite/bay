@@ -1,4 +1,4 @@
-2.13.3 (2018-01-22)
+2.13.4 (2018-01-22)
 ------------------
 - Increase the Docker API timeout from 42 to 60 seconds.
 - Fix bay gc (missing method).
