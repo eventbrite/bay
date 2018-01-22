@@ -1,3 +1,9 @@
+2.13.0 (2018-01-22)
+------------------
+- Increase the Docker API timeout from 42 to 60 seconds.
+- Fix bay gc (missing method).
+- Fix bay up statistics.
+
 2.12.0 (2017-12-20)
 ------------------
 - Add hooks for pre/post 'bay up' and 'bay run'.
