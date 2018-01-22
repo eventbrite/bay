@@ -329,8 +329,8 @@ class FormationRunner:
                     )
 
                 # Run plugins
-                self.app.run_hooks(PluginHook.POST_CONTAINER_START, host=self.host, instance=instance, task=start_task)
-                self.app.run_hooks(PluginHook.POST_SERVICE_START, host=self.host, instance=instance, task=start_task)
+                self.app.run_hooks(PluginHook.POST_RUN_CONTAINER, host=self.host, instance=instance, task=start_task)
+                self.app.run_hooks(PluginHook.POST_RUN_CONTAINER_FULLY_STARTED, host=self.host, instance=instance, task=start_task)
 
             except ContainerBootFailure as e:
                 message = "{}\n\n{}".format(
