@@ -209,7 +209,6 @@ class FormationRunner:
                 collapse_if_finished=True,
             )
 
-            self.start_time = time.time()
             self.remove_stopped(instance)
 
             # Run plugins
@@ -344,5 +343,4 @@ class FormationRunner:
                     instance=e.instance,
                 )
 
-            time = int(round((time.time() - start_time) * 1000))
-            start_task.finish(status='Done [{}]'.format(time), status_flavor=Task.FLAVOR_GOOD)
+            start_task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
