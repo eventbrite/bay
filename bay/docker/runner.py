@@ -212,7 +212,7 @@ class FormationRunner:
             self.remove_stopped(instance)
 
             # Run plugins
-            self.app.run_hooks(PluginHook.PRE_START, host=self.host, instance=instance, task=start_task)
+            self.app.run_hooks(PluginHook.PRE_RUN_CONTAINER, host=self.host, instance=instance, task=start_task)
 
             # See if network exists and if not, create it
             with network_lock:
