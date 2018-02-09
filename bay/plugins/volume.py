@@ -67,14 +67,11 @@ def destroy(app, host, name):
     Destroys a single volume
     """
     task = Task("Destroying volume {}".format(name))
-    # Run GC first to clean up stopped containers
-    from .gc import GarbageCollector
-    GarbageCollector(host).gc_all(task)
     # Remove the volume
     formation = FormationIntrospector(host, app.containers).introspect()
     instance_conflicts = [instance.container.name for instance in formation.get_instances_using_volume(name)]
     if instance_conflicts:
-        task.finish(status="Volume {} is in use by container(s): {}".format(
+        task.finish(status="Volume {} is in use by running container(s): {}".format(
             name, ",".join(instance_conflicts)), status_flavor=Task.FLAVOR_BAD)
     else:
         try:
@@ -82,6 +79,22 @@ def destroy(app, host, name):
         except NotFound:
             task.add_extra_info("There is no volume called {}".format(name))
             task.finish(status="Not found", status_flavor=Task.FLAVOR_BAD)
+        except APIError as err:
+            # volume is in use by stopped containers
+            # remove the stopped containers first, then remove the volume
+            if "volume is in use" in err.explanation:
+                # the Docker error looks like this:
+                # unable to remove volume: remove core-frontend-node-modules: volume is in use - [3d5bda68, 3d5bda69]
+                container_ids = err.explanation[err.explanation.find('[') + 1:err.explanation.find(']')].split(', ')
+                for container_id in container_ids:
+                    host.client.remove_container(container_id)
+                host.client.remove_volume(name)
+                task.finish(status="Done (removed {} stopped container(s))".format(
+                    len(container_ids)), status_flavor=Task.FLAVOR_GOOD)
+            else:
+                # Docker changed their explanation message, or something went wrong.
+                # We just return the error to the user.
+                task.finish(status="{}".format(err.explanation), status_flavor=Task.FLAVOR_BAD)
         else:
             task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
 
