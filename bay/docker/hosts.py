@@ -3,6 +3,8 @@ import docker
 import os
 import sys
 import urllib.parse
+import json
+import subprocess
 from distutils.version import LooseVersion
 
 from ..exceptions import DockerNotAvailableError
@@ -171,7 +173,40 @@ class Host(object):
         Returns the internal IP of the host as seen from the containers during
         build, which is the gateway of the default bridge network.
         """
-        return self.client.inspect_network("bridge")['IPAM']['Config'][0]['Gateway']
+        """
+        Determines the "host" IP containers should use.
+
+        Get the Gateway IP from the docker daemon.
+        """
+        version = LooseVersion(self.client.version()['Version'].split("-")[0])
+        version_17_06 = LooseVersion("17.06.0")
+        version_17_12 = LooseVersion("17.12.0")
+
+        if sys.platform == "darwin" and version >= version_17_06:
+            # MacOS + recent version of Docker for Mac
+            gateway_ip = "docker.for.mac.host.internal" if version >= version_17_12 else "docker.for.mac.localhost"
+        elif sys.platform == "win32" and version >= version_17_06:
+            # Windows + recent version of Docker for Windows
+            gateway_ip = "docker.for.win.host.internal" if version >= version_17_12 else "docker.for.win.localhost"
+        else:
+            # legacy logic for Linux and older versions of Docker for Mac and Windows
+            # Make sure the network is created first
+            try:
+                subprocess.check_output(
+                    ['docker', 'network', 'create', '-d', 'bridge', 'eventbrite'],
+                    universal_newlines=True,
+                )
+            except subprocess.CalledProcessError:
+                # The network already exists
+                pass
+            # Grab its gateway IP
+            docker_network_settings = subprocess.check_output(
+                ['docker', 'network', 'inspect', 'eventbrite'],
+                universal_newlines=True,
+            )
+            gateway_ip = json.loads(docker_network_settings)[0]['IPAM']['Config'][0]['Gateway']
+
+        return gateway_ip
 
     @cached_property
     def is_docker_for_mac(self):
