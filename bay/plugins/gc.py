@@ -39,7 +39,7 @@ class GarbageCollector:
         """
         task = Task("Removing all stopped containers", parent=parent_task)
         response = self.host.client.prune_containers()
-        task.finish(status="Done, reclaimed {}MB".format(
+        task.finish(status="Done, reclaimed {:.1f} MB".format(
             response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
     def gc_networks(self, parent_task):
@@ -56,7 +56,7 @@ class GarbageCollector:
         """
         task = Task("Removing all dangling images", parent=parent_task)
         response = self.host.client.prune_images({"dangling": True})
-        task.finish(status="Done, reclaimed {}MB".format(
+        task.finish(status="Done, reclaimed {:.1f} MB".format(
             response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
 
