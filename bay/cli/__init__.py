@@ -196,6 +196,9 @@ class AppGroup(SpellcheckableAliasableGroup):
 
     def main(self, *args, **kwargs):
         try:
+            if os.environ.get('BAY_HOME') is None:
+                click.echo(RED("BAY_HOME is not set"))
+                sys.exit(1)
             return super(AppGroup, self).main(*args, **kwargs)
         except DockerNotAvailableError as e:
             # Run the failure hooks, printing a default error if nothing is hooked in
