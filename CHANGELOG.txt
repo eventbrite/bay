@@ -1,3 +1,10 @@
+2.14.0 (2018-02-13)
+------------------
+- Fix error when the docker network doesn't exist.
+- Exit if BAY_HOME doesn't exist.
+- Fix bay gc number of decimals.
+- Make bay volume destroy faster.
+
 2.13.4 (2018-01-22)
 ------------------
 - Increase the Docker API timeout from 42 to 60 seconds.
