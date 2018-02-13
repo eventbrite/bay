@@ -2,8 +2,8 @@ Usage
 =====
 
 
-To use Bay, you must first be in the top-level directory of your container
-library, or have the ``BAY_HOME`` environment variable to that path.
+To use Bay, you must first have the ``BAY_HOME`` environment variable pointing to
+the top-level directory of your container library.
 
 
 Selecting a profile
