@@ -25,13 +25,30 @@ class DevModesPlugin(BasePlugin):
 
 
 @click.command()
-@click.option('--profile-only', '-p', default=False, is_flag=True)
-@click.option('--mounted', '-m', default=False, is_flag=True)
-@click.option('--verbose/--quiet', '-v/-q', default=True)
+@click.option(
+    '--profile-only',
+    '-p',
+    help="Filter by current profile.",
+    default=False,
+    is_flag=True,
+)
+@click.option(
+    '--mounted',
+    '-m',
+    help="Filter by mounted dev mounts.",
+    default=False,
+    is_flag=True,
+)
+@click.option(
+    '--verbose/--quiet',
+    '-v/-q',
+    help="Full output, or dev mounts names only.",
+    default=True,
+)
 @click.pass_obj
 def mounts(app, profile_only, mounted, verbose):
     """
-    List all current dev mounts.
+    List current dev mounts for all containers.
     """
     def to_message(mounted, unmounted):
         return '\n'.join(filter(None, [
