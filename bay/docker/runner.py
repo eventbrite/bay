@@ -282,6 +282,7 @@ class FormationRunner:
                     port_bindings=instance.ports,
                     publish_all_ports=True,
                     security_opt=['seccomp:unconfined'],
+                    cap_add=["SYS_PTRACE"],
                 ),
                 networking_config=networking_config,
                 labels={
