@@ -185,6 +185,8 @@ def build(app, containers, host, cache, recursive, verbose):
     pulled_containers = set()
     failed_pulls = set()
 
+    app.run_hooks(PluginHook.PRE_GROUP_BUILD, host=host)
+
     task = Task("Building", parent=app.root_task)
     start_time = datetime.datetime.now().replace(microsecond=0)
 
@@ -289,8 +291,6 @@ def build(app, containers, host, cache, recursive, verbose):
             order=CYAN(", ".join([container.name for container in ancestors_to_build])),
         ),
     )
-
-    app.run_hooks(PluginHook.PRE_GROUP_BUILD, host=host, containers=ancestors_to_build, task=task)
 
     for container in ancestors_to_build:
         image_builder = Builder(
