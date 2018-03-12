@@ -1,3 +1,7 @@
+2.15.0 (2018-03-12)
+------------------
+- New bay build hook.
+
 2.14.0 (2018-02-13)
 ------------------
 - Fix error when the docker network doesn't exist.
