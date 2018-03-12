@@ -175,7 +175,7 @@ def build(app, containers, host, cache, recursive, verbose):
     Build container images, along with its build dependencies.
     """
 
-    app.run_hooks(PluginHook.INIT_BUILD)
+    app.run_hooks(PluginHook.INIT_GROUP_BUILD)
 
     # `bay build` is equivalent to `bay build profile`
     if not containers:
