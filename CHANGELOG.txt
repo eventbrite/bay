@@ -1,3 +1,7 @@
+2.15.4 (2018-04-11)
+------------------
+- Switch bay tail's "all" parameter to an option. Add a "bay log" command that behaves like "docker logs".
+
 2.15.3 (2018-04-11)
 ------------------
 - Fix bay gc timeouts.
