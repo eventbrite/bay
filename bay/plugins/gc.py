@@ -1,9 +1,11 @@
 import attr
 import click
+import subprocess
 
 from .base import BasePlugin
 from ..cli.argument_types import HostType
 from ..cli.tasks import Task
+from ..cli.colors import YELLOW
 
 
 @attr.s
@@ -28,36 +30,12 @@ class GarbageCollector:
 
     def gc_all(self, parent_task):
         task = Task("Running garbage collection", parent=parent_task)
-        self.gc_containers(task)
-        self.gc_networks(task)
-        self.gc_images(task)
+
+        click.echo(YELLOW('INFO: Run bay up first if you don\'t want to remove all your containers.'))
+
+        subprocess.run(["docker", "system", "prune"])
+
         task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
-
-    def gc_containers(self, parent_task):
-        """
-        Remove all stopped containers
-        """
-        task = Task("Removing all stopped containers", parent=parent_task)
-        response = self.host.client.prune_containers()
-        task.finish(status="Done, reclaimed {:.1f} MB".format(
-            response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
-
-    def gc_networks(self, parent_task):
-        """
-        Remove all networks not used by at least one container
-        """
-        task = Task("Removing all networks not used by at least one container", parent=parent_task)
-        self.host.client.prune_networks()
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
-
-    def gc_images(self, parent_task):
-        """
-        Remove all dangling images
-        """
-        task = Task("Removing all dangling images", parent=parent_task)
-        response = self.host.client.prune_images({"dangling": True})
-        task.finish(status="Done, reclaimed {:.1f} MB".format(
-            response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
 
 @click.command()
