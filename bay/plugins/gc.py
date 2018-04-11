@@ -33,9 +33,20 @@ class GarbageCollector:
 
         click.echo(YELLOW('INFO: Run bay up first if you don\'t want to remove all your containers.'))
 
-        subprocess.run(["docker", "system", "prune"])
+        try:
+            subprocess.check_call(["docker", "system", "prune"])
+            task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+        except subprocess.CalledProcessError as err:
+            task.finish(status="Error while removing unused data: {}".format(err), status_flavor=Task.FLAVOR_BAD)
 
-        task.finish(status="Done", status_flavor=Task.FLAVOR_GOOD)
+    def gc_containers(self, parent_task):
+        """
+        Remove all stopped containers
+        """
+        task = Task("Removing all stopped containers", parent=parent_task)
+        response = self.host.client.prune_containers()
+        task.finish(status="Done, reclaimed {:.1f} MB".format(
+            response['SpaceReclaimed'] / 1024 / 1024), status_flavor=Task.FLAVOR_GOOD)
 
 
 @click.command()
