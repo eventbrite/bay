@@ -240,8 +240,6 @@ class FormationRunner:
             volume_binds = {}
 
             def add_volume_mount(mount_path, volume):
-                if self.host.supports_cached_volumes and ",cached" not in volume.mode:
-                    volume.mode = volume.mode + ",cached"
                 volume_mountpoints.append(mount_path)
                 volume_binds[volume.source] = {"bind": mount_path, "mode": volume.mode}
 
