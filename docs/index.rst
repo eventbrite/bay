@@ -1,7 +1,7 @@
 .. _index:
 
 =================
-Bay Documentation
+Bay
 =================
 
 .. toctree::
@@ -14,3 +14,4 @@ Bay Documentation
    theory
 
 .. include:: ../Readme.rst
+   :start-line: 11
