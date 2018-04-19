@@ -22,18 +22,18 @@ class TailPlugin(BasePlugin):
 @click.option("--host", "-h", type=HostType(), default="default")
 @click.option('--follow/--no-follow', '-f', default=False, help="Follow log output")
 @click.option("--all/--no-all", default=False, help="Show the whole log")
-@click.option("-n", type=int, help="Show specified number of lines")
+@click.option("--lines", "-n", type=int, help="Show specified number of lines")
 @click.argument("container", type=ContainerType())
-@click.argument("lines", default="10")
+@click.argument("number_of_lines", default="10")
 @click.pass_obj
-def tail(app, host, container, lines, all=False, follow=False, n=None):
+def tail(app, host, container, number_of_lines, all=False, follow=False, lines=None):
     """
     Tail the logs of a container. Optional second argument specifies a number of lines to print.
     """
     if all:
         tail = "all"
     else:
-        tail = n or lines
+        tail = lines or number_of_lines
     _logs(app, host, container, tail, follow)
 
 
