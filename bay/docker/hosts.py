@@ -181,8 +181,11 @@ class Host(object):
         version = LooseVersion(self.client.version()['Version'].split("-")[0])
         version_17_06 = LooseVersion("17.06.0")
         version_17_12 = LooseVersion("17.12.0")
+        version_18_03 = LooseVersion("18.03.0")
 
-        if sys.platform == "darwin" and version >= version_17_06:
+        if version >= version_18_03:
+            gateway_ip = "host.docker.internal"
+        elif sys.platform == "darwin" and version >= version_17_06:
             # MacOS + recent version of Docker for Mac
             gateway_ip = "docker.for.mac.host.internal" if version >= version_17_12 else "docker.for.mac.localhost"
         elif sys.platform == "win32" and version >= version_17_06:
