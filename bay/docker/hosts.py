@@ -183,7 +183,7 @@ class Host(object):
         version_17_12 = LooseVersion("17.12.0")
         version_18_03 = LooseVersion("18.03.0")
 
-        if version >= version_18_03:
+        if version >= version_18_03 and sys.platform in ("darwin", "win32"):
             gateway_ip = "host.docker.internal"
         elif sys.platform == "darwin" and version >= version_17_06:
             # MacOS + recent version of Docker for Mac
