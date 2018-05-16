@@ -105,26 +105,12 @@ class Container:
         else:
             config_data = {}
         # Calculate links
-        # TODO: Remove old, deprecated links format.
         self.links = {}
         config_links = config_data.get("links", {})
-        if isinstance(config_links, list):
-            warnings.warn("Old links format in {}".format(self.config_path))
-            # Old list format
-            for link_name in config_links:
-                self.links[link_name] = {"required": True}
-        else:
-            # New links format
-            for link_name in (config_links.get("required") or []):
-                self.links[link_name] = {"required": True}
-            for link_name in (config_links.get("optional") or []):
-                self.links[link_name] = {"required": False}
-        # Old extra links key
-        config_extra_links = config_data.get("extra_links", [])
-        if config_extra_links:
-            warnings.warn("Old extra_links format in {}".format(self.config_path))
-            for link_name in config_extra_links:
-                self.links[link_name] = {"required": False}
+        for link_name in (config_links.get("required") or []):
+            self.links[link_name] = {"required": True}
+        for link_name in (config_links.get("optional") or []):
+            self.links[link_name] = {"required": False}
         # Parse waits from the config format
         self.waits = []
         for wait_dict in config_data.get("waits", []):

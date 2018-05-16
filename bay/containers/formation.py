@@ -93,8 +93,7 @@ class ContainerFormation:
                     # Annotate the error with the container
                     e.container = dependency
                     raise
-            if dependency in direct_dependencies:
-                links[dependency.name] = instance
+            links[dependency.name] = instance
         # Look up the image hash to use in the repo
         image_id = host.images.image_version(container.image_name, container.image_tag)
         # Make the instance
@@ -198,9 +197,6 @@ class ContainerInstance:
         for alias, target in list(self.links.items()):
             if isinstance(target, str):
                 raise ValueError("Link target {} is still a string!".format(target))
-            if target.container not in self.container.graph.dependencies(self.container):
-                warnings.warn("It is not possible to link %s to %s as %s" % (target, self.container, alias))
-                del self.links[alias]
         # Verify devmodes exist
         for devmode in list(self.devmodes):
             if devmode not in self.container.devmodes:
