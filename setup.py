@@ -52,7 +52,6 @@ setup(
         help = bay.plugins.help:HelpPlugin
         hosts = bay.plugins.hosts:HostsPlugin
         images = bay.plugins.images:ImagesPlugin
-        legacy_env = bay.plugins.legacy_env:LegacyEnvPlugin
         mounts = bay.plugins.mounts:DevModesPlugin
         profile = bay.plugins.profile:ProfilesPlugin
         ps = bay.plugins.ps:PsPlugin
