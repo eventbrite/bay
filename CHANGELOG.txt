@@ -1,3 +1,10 @@
+2.16.0 (2018-05-16)
+------------------
+- Volume improvements: support env variables in source and support mounting files as volumes
+- Use docker.internal for the host DNS for Docker 18.03+
+- Allow non-eventbrite github volumes
+- Support for `-n` option in `tail` command
+
 2.15.4 (2018-04-12)
 ------------------
 - Switch bay tail's "all" parameter to an option. Add a "bay log" command that behaves like "docker logs".
