@@ -1,3 +1,7 @@
+2.16.1 (2018-05-22)
+------------------
+- Remove profile warnings
+
 2.16.0 (2018-05-16)
 ------------------
 - Volume improvements: support env variables in source and support mounting files as volumes

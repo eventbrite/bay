@@ -120,7 +120,6 @@ class Profile:
             try:
                 container = self.graph[name]
             except KeyError:
-                warnings.warn("Cannot apply profile for nonexistent container {}".format(name))
                 continue
             # Apply container links
             if "links" in details:
