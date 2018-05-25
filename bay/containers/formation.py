@@ -258,7 +258,6 @@ class ContainerInstance:
                     # instead, we delete the link and warn the user. The deleted link means `up` will recreate it
                     # if it's orphaned.
                     del self.links[alias]
-                    warnings.warn("Could not resolve link {} to an instance for {}".format(target, self.name))
                 else:
                     self.links[alias] = target
             elif isinstance(target, ContainerInstance):
