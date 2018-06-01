@@ -2,9 +2,12 @@ import attr
 import click
 import datetime
 import json
+import os
+import sys
 
 from docker.errors import NotFound, APIError
 
+from ..cli.colors import RED
 from ..cli.tasks import Task
 from ..exceptions import ImageNotFoundException, ImagePullFailure, BadConfigError
 
@@ -187,6 +190,15 @@ class ImageRepository:
             # we should always have Docker images uploaded on ECR, but if for some
             # reason the image can't be found, we raise an error and it will get built
             # instead
+            if 'BAY_NO_REGISTRY' not in os.environ:
+                # Sometimes docker python client fails with NotFound error while trying to pull
+                #   an image without having valid credentials.
+                # For the user, it means that all the static images would be built locally. It's a long process.
+                # We want to fail fast in that case and give the user the chance to login to the registry.
+                click.echo(RED("Cannot pull image {}:{}.".format(remote_name, image_tag)))
+                click.secho("To fix this, please run `bay registry login`.", bold=True)
+                click.echo("To proceed without registry, export BAY_NO_REGISTRY=yes and try again")
+                sys.exit(1)
             task.update(status='Not found', status_flavor=Task.FLAVOR_WARNING)
             raise ImagePullFailure(error, remote_name=remote_name, image_tag=image_tag)
         except APIError as error:
