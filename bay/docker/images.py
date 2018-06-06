@@ -106,6 +106,16 @@ class ImageRepository:
                     image_tag=image_tag
                 )
 
+        # Check if the image already exists locally
+        # This is an optimization to save a trip to the registry: 1-2 sec per image
+        if image_tag != "latest":
+            try:
+                self.host.images.image_version(image_name, image_tag)
+                return None
+            except ImageNotFoundException:
+                # The image will be pulled from the registry
+                pass
+
         registry = self.get_registry(app)
 
         # See if the registry is willing to give us a URL (it's logged in)
