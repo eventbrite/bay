@@ -102,7 +102,8 @@ class ContainerFormation:
             if dependency in direct_dependencies:
                 links[dependency.name] = instance
         # Look up the image hash to use in the repo
-        image_id = host.images.image_version(container.image_name, container.image_tag, ignore_not_found=ignore_dependencies)
+        image_id = host.images.image_version(
+            container.image_name, container.image_tag, ignore_not_found=ignore_dependencies)
         # Make the instance
         instance = ContainerInstance(
             name="{}.{}.1".format(self.graph.prefix, container.name),
