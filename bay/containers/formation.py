@@ -46,7 +46,7 @@ class ContainerFormation:
         self.container_instances[instance.name] = instance
         instance.formation = self
 
-    def remove_instance(self, instance):
+    def remove_instance(self, instance, ignore_dependencies=False):
         """
         Removes an instance from the formation
         """
@@ -56,8 +56,14 @@ class ContainerFormation:
         dependent_descendency = set(dependency_sort([instance.container], self.graph.dependents)[:-1])
         for other_instance in list(self):
             if other_instance.container in dependent_descendency and other_instance.formation:
-                other_instance.formation = None
-                del self.container_instances[other_instance.name]
+                if ignore_dependencies:
+                    # only remove the dependency
+                    # prevent a starting container to be stuck waiting for a dependency
+                    self.graph.discard_dependency(other_instance.container, instance.container)
+                else:
+                    # fully remove all the dependent containers
+                    other_instance.formation = None
+                    del self.container_instances[other_instance.name]
         # Remove the requested container
         del self.container_instances[instance.name]
         instance.formation = None
@@ -68,7 +74,7 @@ class ContainerFormation:
             if instance.formation:
                 self.remove_instance(instance)
 
-    def add_container(self, container, host):
+    def add_container(self, container, host, ignore_dependencies=False):
         """
         Adds a container to run inside the formation along with all dependencies.
         Returns the Instance that was created for the container.
@@ -88,7 +94,7 @@ class ContainerFormation:
             else:
                 # OK, we need to make one
                 try:
-                    instance = self.add_container(dependency, host)
+                    instance = self.add_container(dependency, host, ignore_dependencies)
                 except ImageNotFoundException as e:
                     # Annotate the error with the container
                     e.container = dependency
@@ -96,7 +102,7 @@ class ContainerFormation:
             if dependency in direct_dependencies:
                 links[dependency.name] = instance
         # Look up the image hash to use in the repo
-        image_id = host.images.image_version(container.image_name, container.image_tag)
+        image_id = host.images.image_version(container.image_name, container.image_tag, ignore_not_found=ignore_dependencies)
         # Make the instance
         instance = ContainerInstance(
             name="{}.{}.1".format(self.graph.prefix, container.name),
@@ -199,7 +205,6 @@ class ContainerInstance:
             if isinstance(target, str):
                 raise ValueError("Link target {} is still a string!".format(target))
             if target.container not in self.container.graph.dependencies(self.container):
-                warnings.warn("It is not possible to link %s to %s as %s" % (target, self.container, alias))
                 del self.links[alias]
         # Verify devmodes exist
         for devmode in list(self.devmodes):

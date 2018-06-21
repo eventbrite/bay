@@ -22,6 +22,8 @@ class Profile:
     description = attr.ib(default=None, init=False)
     version = attr.ib(default=None, init=False)
     containers = attr.ib(default=attr.Factory(dict), init=False)
+    # Ignore the required dependencies coming from the container(s) bay.yaml
+    ignore_dependencies = attr.ib(default=False, init=False)
 
     def __attrs_post_init__(self):
         if self.load_immediately:
@@ -49,6 +51,7 @@ class Profile:
 
         self.description = data.get("description")
         self.version = data.get("min-version")
+        self.ignore_dependencies = data.get("ignore-dependencies")
 
         for name, details in data.get("containers", {}).items():
             if details is None:

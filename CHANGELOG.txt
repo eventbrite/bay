@@ -1,3 +1,7 @@
+2.17.0 (2018-06-21)
+------------------
+- Ability to exclude required dependency to support flat profiles.
+
 2.16.4 (2018-06-12)
 ------------------
 - Ask user to run bay registry login in case of docker pull not found error.

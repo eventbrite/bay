@@ -75,8 +75,10 @@ def up(app, host):
     Start up a profile by booting the default containers.
     Leaves any other containers that are running (shell, ssh-agent, etc.) alone.
     """
-    profile = app.profiles[0].parent_profile if app.profiles else ''
-    click.echo("Starting up profile %s..." % CYAN(profile))
+    profile = app.profiles[1] if app.profiles and len(app.profiles) > 1 else None
+    ignore_dependencies = profile.ignore_dependencies if profile else False
+    if profile:
+        click.echo("Starting up profile %s..." % CYAN(profile.name))
     # Do removal loop first so we don't step on adding containers later
     formation = FormationIntrospector(host, app.containers).introspect()
     for instance in list(formation):
@@ -85,10 +87,18 @@ def up(app, host):
         if not instance.container.system and instance.formation:
             formation.remove_instance(instance)
 
-    # Now add in containers
+    # Now add in containers (listed in yaml profile file)
+    profile_containers = []
     for container in app.containers:
         if app.containers.options(container).get('default_boot'):
-            formation.add_container(container, host)
+            profile_containers.append(container)
+            formation.add_container(container, host, ignore_dependencies)
+
+    if app.profiles[1].ignore_dependencies:
+        for instance in list(formation):
+            # Remove all dependent containers not listed in the profile file
+            if not instance.container.system and instance.container not in profile_containers:
+                formation.remove_instance(instance, True)
 
     task = Task("Restarting containers", parent=app.root_task)
     run_formation(app, host, formation, task)

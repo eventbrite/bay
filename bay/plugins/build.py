@@ -194,8 +194,10 @@ def build(app, containers, host, cache, recursive, verbose):
 
     # Go through the containers, expanding "ContainerType.Profile" into a list
     # of default boot containers in the profile.
+    profile = None
     for container in containers:
         if container is ContainerType.Profile:
+            profile = app.profiles[1]
             for con in app.containers:
                 # When building the profile, rebuild system containers too
                 if app.containers.options(con).get('in_profile') or con.system:
@@ -220,6 +222,10 @@ def build(app, containers, host, cache, recursive, verbose):
         return volume_deps
 
     containers_to_pull = dependency_sort(containers_to_pull, container_volume_dependencies)
+
+    if profile is not None and profile.ignore_dependencies:
+        # If dependencies are ignored, only keep the containers defined in the profile
+        containers_to_pull = [c for c in containers_to_pull if c.name in profile.containers.keys()]
 
     # Try pulling each container to pull, and add it to containers_to_build if
     # it fails. If it works, remember we pulled it, so we don't have to pull it

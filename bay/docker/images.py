@@ -241,7 +241,7 @@ class ImageRepository:
                     remote_name=source_image,
                     image_tag=source_tag)
 
-    def image_version(self, image_name, image_tag):
+    def image_version(self, image_name, image_tag, ignore_not_found=False):
         """
         Returns the Docker image hash of the requested image and tag, or
         raises ImageNotFoundException if it's not available on the host.
@@ -253,11 +253,14 @@ class ImageRepository:
             return docker_info['Id']
         except NotFound:
             # TODO: Maybe auto-build if we can?
-            raise ImageNotFoundException(
-                "Cannot find image {}:{}".format(image_name, image_tag),
-                image=image_name,
-                image_tag=image_tag,
-            )
+            if ignore_not_found:
+                return None
+            else:
+                raise ImageNotFoundException(
+                    "Cannot find image {}:{}".format(image_name, image_tag),
+                    image=image_name,
+                    image_tag=image_tag,
+                )
 
     def push_image_version(self, app, image_name, image_tag, parent_task):
         """

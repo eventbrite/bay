@@ -144,6 +144,12 @@ class ContainerGraph:
         """
         return self._dependencies.get(container, set())
 
+    def discard_dependency(self, container, dependency_container):
+        """
+        Discard a runtime dependency for a container.
+        """
+        self._dependencies.get(container, set()).discard(dependency_container)
+
     def dependents(self, container):
         """
         Returns the containers that depend on the named container
