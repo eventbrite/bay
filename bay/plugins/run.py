@@ -39,13 +39,15 @@ def run(app, containers, host, tail):
     """
     Runs containers by name, including any dependencies needed
     """
+    profile = app.profiles[1] if app.profiles and len(app.profiles) > 1 else None
+    ignore_dependencies = profile.ignore_dependencies if profile else False
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
     # Make a Formation that represents what we want to do by taking the existing
     # state and adding in the containers we want
     for container in containers:
         try:
-            formation.add_container(container, host)
+            formation.add_container(container, host, ignore_dependencies)
         except ImageNotFoundException as e:
             # If it's the container we're trying to add directly, have one error -
             # otherwise, say it's a link
@@ -66,7 +68,7 @@ def run(app, containers, host, tail):
                 sys.exit(1)
     # Run that change
     task = Task("Starting containers", parent=app.root_task)
-    run_formation(app, host, formation, task)
+    run_formation(app, host, formation, task, containers)
     # If they asked to tail, then run tail
     if tail:
         if len(containers) != 1:
@@ -84,11 +86,13 @@ def shell(app, container, host, command):
     """
     Runs a single container with foreground enabled and overridden to use bash.
     """
+    profile = app.profiles[1] if app.profiles and len(app.profiles) > 1 else None
+    ignore_dependencies = profile.ignore_dependencies if profile else False
     # Get the current formation
     formation = FormationIntrospector(host, app.containers).introspect()
     # Make a Formation with that container launched with bash in foreground
     try:
-        instance = formation.add_container(container, host)
+        instance = formation.add_container(container, host, ignore_dependencies)
     except ImageNotFoundException as e:
         click.echo(RED(str(e)))
         sys.exit(1)
@@ -99,7 +103,7 @@ def shell(app, container, host, command):
         instance.command = ["/bin/bash -l"]
     # Run that change
     task = Task("Shelling into {}".format(container.name), parent=app.root_task)
-    run_formation(app, host, formation, task)
+    run_formation(app, host, formation, task, [container])
 
 
 @click.command()
@@ -138,11 +142,22 @@ def restart(app, containers, host):
         app.invoke("up", host=host)
 
 
-def run_formation(app, host, formation, task):
+def run_formation(app, host, formation, task, arg_containers=[]):
     """
     Common function to run a formation change.
     """
+    profile = app.profiles[1] if app.profiles and len(app.profiles) > 1 else None
+    ignore_dependencies = profile.ignore_dependencies if profile else False
     run_hook = task.name != "Stopping containers"
+
+    # If ignore dependencies set, remove the containers not listed in the profile
+    if ignore_dependencies:
+        profile_containers = [c for c in app.containers if app.containers.options(c).get('default_boot')]
+        for instance in list(formation):
+            c = instance.container
+            if not instance.container.system and c not in profile_containers and c not in arg_containers:
+                formation.remove_instance(instance, True)
+
     if run_hook:
         app.run_hooks(PluginHook.PRE_GROUP_START, host=host, formation=formation, task=task)
     container_in_error = None
