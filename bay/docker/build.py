@@ -217,6 +217,9 @@ class Builder:
                 else:
                     with open(disk_location, "rb") as fh:
                         tfile.addfile(info, fh)
+            # Ignore symlinks
+            elif os.path.islink(disk_location):
+                pass
             # Error for anything else
             else:
                 raise ValueError(
