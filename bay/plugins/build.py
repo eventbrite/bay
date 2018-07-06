@@ -224,8 +224,10 @@ def build(app, containers, host, cache, recursive, verbose):
     containers_to_pull = dependency_sort(containers_to_pull, container_volume_dependencies)
 
     if profile is not None and profile.ignore_dependencies:
+        # List the containers defined in the current profile and its ancestors
+        profile_containers = set(sum([list(p.containers.keys()) for p in app.profiles[1:]], []))
         # If dependencies are ignored, only keep the containers defined in the profile
-        containers_to_pull = [c for c in containers_to_pull if c.name in profile.containers.keys()]
+        containers_to_pull = [c for c in containers_to_pull if c.name in profile_containers]
 
     # Try pulling each container to pull, and add it to containers_to_build if
     # it fails. If it works, remember we pulled it, so we don't have to pull it
