@@ -179,10 +179,12 @@ class Builder:
         # For each file, add it to the tar with normalisation
         for path in paths:
             disk_location = os.path.join(self.container.path, path)
+            # for Kubernetes images, use original date values for source code
+            useRealTime = 'BAY_K8' in os.environ and os.environ['BAY_K8'] == 'true' and "/src/" in disk_location
             # Directory addition
             if os.path.isdir(disk_location):
                 info = tarfile.TarInfo(name=path)
-                info.mtime = 0
+                info.mtime = (0, os.stat(disk_location).st_mtime)[useRealTime]
                 info.mode = 0o775
                 info.type = tarfile.DIRTYPE
                 info.uid = 0
@@ -194,7 +196,7 @@ class Builder:
             elif os.path.isfile(disk_location):
                 stat = os.stat(disk_location)
                 info = tarfile.TarInfo(name=path)
-                info.mtime = 0
+                info.mtime = (0, stat.st_mtime)[useRealTime]
                 info.size = stat.st_size
                 info.mode = 0o755
                 info.type = tarfile.REGTYPE
