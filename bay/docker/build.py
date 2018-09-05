@@ -180,7 +180,11 @@ class Builder:
         for path in paths:
             disk_location = os.path.join(self.container.path, path)
             # for Kubernetes images, use original date values for source code
-            useRealTime = 'BAY_K8' in os.environ and os.environ['BAY_K8'] == 'true' and "/src/" in disk_location
+            useRealTime = (
+                'BAY_BUILD_SRC_REAL_TIME' in os.environ
+                and os.environ['BAY_BUILD_SRC_REAL_TIME'] == 'true'
+                and "/src/" in disk_location
+            )
             # Directory addition
             if os.path.isdir(disk_location):
                 info = tarfile.TarInfo(name=path)
