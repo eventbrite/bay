@@ -1,4 +1,9 @@
-2.17.4 (2018-07-09)
+2.17.5 (2018-09-04)
+------------------
+- Do not reset file time when creating the docker image for source files. 
+This change is under a feature flag `BAY_BUILD_SRC_REAL_TIME=true`.
+
+2.17.4 (2018-07-09
 ------------------
 - Fix: when building a profile with the 'inherits' property, include the parent containers in the build.
 
