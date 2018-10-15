@@ -90,16 +90,101 @@ on Docker take an optional ``-h``/``--host`` argument that takes one of the
 host aliases given here.
 
 
-image list
-----------
+image
+-----
 
-``bay image list`` shows you all images for containers that Bay is configured
-with, along with their ID and version.
+Allows operations on images.
 
 
-image destroy
+list_profiles
 -------------
 
-``bay image destroy containername`` destroys the image for the named container.
+List all available profiles.
 
-(TBC)
+
+logs
+----
+
+Fetch the logs of a container.
+
+mount
+-----
+
+Mount a dev checkout in a given container.
+
+
+mounts
+------
+
+List all current dev mounts.
+
+
+profile
+-------
+
+Switch to a different profile, or list the active profile's name.
+
+
+ps
+--
+
+Shows details about all containers currently running.
+
+
+push
+----
+
+Pushes an image up to a registry.
+
+
+registry
+--------
+
+Allows operations on registries.
+
+
+restart
+-------
+
+Stops and then starts containers.
+
+
+run
+---
+
+Runs containers by name, including any dependencies needed.
+
+
+shell
+--------
+
+Runs a single container with foreground enabled and overridden to use bash.
+
+
+stop
+----
+
+Stops containers and ones that depend on them.
+
+
+tail
+----
+
+Tail the logs of a container.
+
+
+unmount
+-------
+
+Unmount a dev checkoutin a given container.
+
+up
+---
+
+Start up a profile by booting the default containers. Leaves any other containers that are running (shell, ssh-agent, etc.) alone.
+
+
+volume
+------
+
+Allows operations on volumes.
