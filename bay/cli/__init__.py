@@ -205,7 +205,7 @@ class AppGroup(SpellcheckableAliasableGroup):
             if not self.app.run_hooks(PluginHook.DOCKER_FAILURE):
                 click.echo(RED(str(e)))
             sys.exit(1)
-        except requests.exceptions.ReadTimeout as e:
+        except requests.exceptions.ReadTimeout:
             click.echo(YELLOW("Transient Docker connection error, please try again."))
             sys.exit(1)
 

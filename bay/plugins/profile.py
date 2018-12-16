@@ -129,7 +129,7 @@ def list_profiles(app, verbose):
             profile_name = filename.split('.')[0]
             try:
                 profile = Profile(os.path.join(profiles_home_dir, filename))
-            except Exception as ex:
+            except Exception:
                 # the profile is corrupted, the specifics of the error do not
                 # matter in this case, where we are only trying to list
                 # available profiles.
