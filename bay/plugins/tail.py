@@ -65,7 +65,7 @@ def _logs(app, host, container, tail, follow=False):
     if tail != "all":
         try:
             tail = int(tail)
-        except Exception as ex:
+        except Exception:
             click.echo(RED("Invalid number of lines: {}".format(tail)))
             sys.exit(1)
     if follow:
