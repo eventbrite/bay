@@ -236,14 +236,21 @@ class FormationRunner:
             })
 
             # Work out volumes configuration
+            # Docker's `binds` argument (defined here as `volume_binds`) can be in two formats. It can be in a list of
+            # strings `'{source}:{destination}:{mode}'`, or it can be a dict whose keys are sources and whose values
+            # are a dict of `{'bind': '{destination}', 'mode': '{mode}'}`. If you specify `binds` in dict format,
+            # the Docker SDK converts it to list format before sending it to the Docker process. However, the dict
+            # format limits you to one container mountpoint per host source. Docker permits multiple container
+            # mountpoints per host source, and the only way to specify that is with the list format. Previously we used
+            # the dict format here, but now we use the list format to support multiple mountpoints.
             volume_mountpoints = []
-            volume_binds = {}
+            volume_binds = []
 
             def add_volume_mount(mount_path, volume):
                 if self.host.supports_cached_volumes and ",cached" not in volume.mode:
                     volume.mode = volume.mode + ",cached"
                 volume_mountpoints.append(mount_path)
-                volume_binds[volume.source] = {"bind": mount_path, "mode": volume.mode}
+                volume_binds.append('{}:{}:{}'.format(volume.source, mount_path, volume.mode))
 
             for mount_path, volume in instance.container.bound_volumes.items():
                 if os.path.isdir(volume.source) or os.path.isfile(volume.source) or os.environ.get("BAY_VOLUME_HOME"):
