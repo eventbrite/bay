@@ -3,7 +3,7 @@
 # Release a new version
 1. Make sure that version.py has the new version on master
 1. Create a new release in github using master branch, includes release notes.
-1. Check the travis job: https://travis-ci.com/eventbrite/bay
+1. Check the travis job: https://travis-ci.org/eventbrite/bay
 1. Check the new version on pypi: https://pypi.python.org/pypi/bay/
 
 # Release a hot fix
