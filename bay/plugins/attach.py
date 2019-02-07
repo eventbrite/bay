@@ -23,16 +23,17 @@ class AttachPlugin(BasePlugin):
 @click.command()
 @click.argument("container", type=ContainerType())
 @click.option("--host", "-h", type=HostType(), default="default")
+@click.option("--shell", "-s", "shell_path", default="/bin/bash")
 @click.argument("command", nargs=-1, default=None)
 @click.pass_obj
-def attach(app, container, host, command):
+def attach(app, container, host, command, shell_path):
     """
     Attaches to a container
     """
     if command:
-        shell = ['/bin/bash', '-lc', ' '.join(command)]
+        shell = [shell_path, '-lc', ' '.join(command)]
     else:
-        shell = ['/bin/bash']
+        shell = [shell_path]
 
     # See if the container is running
     formation = FormationIntrospector(host, app.containers).introspect()
