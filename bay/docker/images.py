@@ -14,10 +14,10 @@ from ..exceptions import ImageNotFoundException, ImagePullFailure, BadConfigErro
 
 def convert_to_json_stream(stream):
     for lines in stream:
-            if isinstance(lines, bytes):
-                lines = lines.decode("ascii")
-            for line in lines.splitlines():
-                yield json.loads(line)
+        if isinstance(lines, bytes):
+            lines = lines.decode("ascii")
+        for line in lines.splitlines():
+            yield json.loads(line)
 
 
 @attr.s
@@ -179,7 +179,7 @@ class ImageRepository:
         end_time = datetime.datetime.now().replace(microsecond=0)
         time_delta_str = str(end_time - start_time)
         if time_delta_str.startswith('0:'):
-                time_delta_str = time_delta_str[2:]
+            time_delta_str = time_delta_str[2:]
         task.finish(status='Done [{}]'.format(time_delta_str), status_flavor=Task.FLAVOR_GOOD)
 
         # Tag the remote image as the right name
