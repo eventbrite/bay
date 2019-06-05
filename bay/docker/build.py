@@ -82,6 +82,7 @@ class Builder:
         start_time = datetime.datetime.now().replace(microsecond=0)
 
         self.app.run_hooks(PluginHook.PRE_BUILD, host=self.host, container=self.container, task=self.task)
+        self.logger.info("Image buildargs: {}".format(self.container.buildargs))
 
         try:
             # Prep normalised context
