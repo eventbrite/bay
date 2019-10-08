@@ -13,7 +13,7 @@ class BoundVolume:
 
     source = attr.ib()
     mode = attr.ib(default="rw")
-    required = attr.ib(convert=bool, default=True)
+    required = attr.ib(converter=bool, default=True)
 
 
 @attr.s
