@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.19.0 (2019-10-08)
+-------------------
+- [MINOR] Add support for invoke release
+- [PATCH] Migrate `convert` to `converter`
+- Permit use of shell other than default /bin/bash
+- Fix RELEASE doc
+
 2.18.0 (2018-12-17)
 -------------------
 - Use list format for binds instead of dict format for multiple mountpoints
