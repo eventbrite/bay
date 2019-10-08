@@ -18,7 +18,7 @@ class ContainerGraph:
     for each container, which contain information like which devmodes to apply/
     containers to start by default.
     """
-    path = attr.ib(convert=os.path.abspath)
+    path = attr.ib(converter=os.path.abspath)
     containers = attr.ib(default=attr.Factory(dict), init=False, repr=False)
     _dependencies = attr.ib(default=attr.Factory(dict), repr=False)
     _build_dependencies = attr.ib(default=attr.Factory(dict), init=False, repr=False)
