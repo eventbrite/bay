@@ -102,7 +102,7 @@ architecture on to a docker environment.
 License
 -------
 
-Copyright 2017 Eventbrite Inc.
+Copyright 2019 Eventbrite Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this project except in compliance with the License.
