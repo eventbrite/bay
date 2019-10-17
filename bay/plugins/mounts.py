@@ -25,39 +25,83 @@ class DevModesPlugin(BasePlugin):
 
 
 @click.command()
-@click.option("--profile-only", "-p", default=False, is_flag=True)
+@click.option(
+    '--profile-only',
+    '-p',
+    help="Filter by current profile.",
+    default=False,
+    is_flag=True,
+)
+@click.option(
+    '--mounted',
+    '-m',
+    help="Filter by mounted dev mounts.",
+    default=False,
+    is_flag=True,
+)
+@click.option(
+    '--verbose/--quiet',
+    '-v/-q',
+    help="Full output, or dev mounts names only.",
+    default=True,
+)
 @click.pass_obj
-def mounts(app, profile_only):
+def mounts(app, profile_only, mounted, verbose):
     """
-    List all current dev mounts.
+    List current dev mounts for all containers.
     """
+    def to_message(mounted, unmounted):
+        return '\n'.join(filter(None, [
+            'Mounted: {}'.format(GREEN(', '.join(sorted(mounted)))) if mounted else None,
+            'Unmounted: {}'.format(PURPLE(', '.join(sorted(unmounted)))) if unmounted else None,
+        ]))
+
     dev_mounts = defaultdict(dict)
 
     for container in app.containers:
-        unmounted_devmodes = set(container.devmodes.keys())
+        mounted_containers = set()
+        unmounted_containers = set(container.devmodes.keys())
+
         runtime_options = app.containers.options(container)
         if runtime_options:
-            devmodes = app.containers.options(container).get('devmodes')
-            dev_mounts[container.name]['mounted'] = sorted(devmodes)
-            dev_mounts[container.name]['unmounted'] = unmounted_devmodes.difference(devmodes)
-        elif not profile_only:
+            mounted_containers = app.containers.options(container).get('devmodes')
+            unmounted_containers = unmounted_containers.difference(mounted_containers)
+
+        elif profile_only:
             # only containers in profile have runtime_options set, so if profile_only
             # then skip ones with no options altogether regrdless is the have devmodes
-            dev_mounts[container.name]['mounted'] = []
-            dev_mounts[container.name]['unmounted'] = unmounted_devmodes
+            continue
 
-    for name, devmodes in dev_mounts.items():
-        if devmodes['mounted']:
-            click.echo('{}: \nMounted: {}\nUnmounted: {}'.format(
-                CYAN(name),
-                GREEN(', '.join(sorted(devmodes['mounted']))),
-                PURPLE(', '.join(sorted(devmodes['unmounted']))),
+        if mounted:
+            unmounted_containers = set()
+
+        if (
+            not mounted_containers and
+            not unmounted_containers
+        ):
+            continue
+
+        dev_mounts[container.name] = dict(
+            mounted=mounted_containers,
+            unmounted=unmounted_containers,
+        )
+
+    messages = []
+
+    if verbose:
+        for name, devmodes in dev_mounts.items():
+            messages.append('{name}: \n{containers}'.format(
+                name=CYAN(name),
+                containers=to_message(devmodes['mounted'], devmodes['unmounted']),
             ))
-        elif devmodes['unmounted']:
-            click.echo('{}: \nUnmounted: {}'.format(
-                CYAN(name),
-                PURPLE(', '.join(sorted(devmodes['unmounted']))),
-            ))
+    else:
+        messages = sorted(set.union(*[
+            devmodes['mounted'] | devmodes['unmounted']
+            for devmodes
+            in dev_mounts.values()
+        ]))
+
+    click.echo('\n'.join(messages))
 
 
 @click.command()
