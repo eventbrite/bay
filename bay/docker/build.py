@@ -93,7 +93,6 @@ class Builder:
                 tag=self.container.image_name_tagged,
                 nocache=not self.docker_cache,
                 rm=True,
-                stream=True,
                 custom_context=True,
                 encoding="gzip",
                 fileobj=build_context,

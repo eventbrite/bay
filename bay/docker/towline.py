@@ -1,7 +1,8 @@
 import json
 import tarfile
+import tempfile
 import time
-from io import BytesIO
+import os
 
 from docker.errors import NotFound
 
@@ -26,9 +27,16 @@ class Towline(object):
         """
         try:
             tar_stream = self.host.client.get_archive(self.container_name, path)[0]
-            tar = tarfile.open(fileobj=BytesIO(tar_stream.read()))
-            contents = tar.extractfile(tar.getmembers()[0]).read().strip()
-            return contents or default
+            destination = tempfile.NamedTemporaryFile()
+            for d in tar_stream:
+                destination.write(d)
+            destination.seek(0)
+            filename = os.path.basename(path)
+            with tarfile.open(mode='r', fileobj=destination) as t:
+                f = t.extractfile(filename)
+                result = f.read()
+                f.close()
+            return result or default
         except NotFound:
             # Ignore missing containers or other errors
             return default
