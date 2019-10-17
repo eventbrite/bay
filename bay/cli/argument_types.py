@@ -54,7 +54,7 @@ class ContainerType(SpellCorrectChoice):
     @cached_property
     def choices(self):
         # Handle no object in the context during error states
-        if not hasattr(self.context, "obj"):
+        if not hasattr(self, "context") or not hasattr(self.context, "obj"):
             return App.get_default_containers().containers.keys()
         # Return valid choices
         containers = self.context.obj.containers
@@ -102,7 +102,7 @@ class MountType(SpellCorrectChoice):
     @cached_property
     def choices(self):
         # Handle no object in the context during error states
-        if not hasattr(self.context, "obj"):
+        if not hasattr(self, "context") or not hasattr(self.context, "obj"):
             return App.get_default_containers().devmode_names()
         # Collapse lists of list of devmode keys into a single set
         choices = self.context.obj.containers.devmode_names()
